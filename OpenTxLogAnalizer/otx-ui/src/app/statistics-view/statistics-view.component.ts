@@ -100,16 +100,34 @@ import {DataManager} from "../../services/data-manager";
               <td>{{data.selectedLog?.stats?.rqly?.max}}</td>
             </tr>
             <tr>
-              <td>DJI Latency ms</td>
-              <td>{{data.selectedLog?.stats?.djiDelay?.min}}</td>
-              <td>{{data.selectedLog?.stats?.djiDelay?.avg}}</td>
-              <td>{{data.selectedLog?.stats?.djiDelay?.max}}</td>
+              <td>VTX Latency ms</td>
+              <td>{{data.selectedLog?.stats?.vtxDelay?.min}}</td>
+              <td>{{data.selectedLog?.stats?.vtxDelay?.avg}}</td>
+              <td>{{data.selectedLog?.stats?.vtxDelay?.max}}</td>
             </tr>
             <tr>
-              <td>DJI Bitrate MBits</td>
-              <td>{{data.selectedLog?.stats?.djiBitrate?.min}}</td>
-              <td>{{data.selectedLog?.stats?.djiBitrate?.avg}}</td>
-              <td>{{data.selectedLog?.stats?.djiBitrate?.max}}</td>
+              <td>VTX Bitrate MBits</td>
+              <td>{{data.selectedLog?.stats?.vtxBitrate?.min}}</td>
+              <td>{{data.selectedLog?.stats?.vtxBitrate?.avg}}</td>
+              <td>{{data.selectedLog?.stats?.vtxBitrate?.max}}</td>
+            </tr>
+            <tr *ngIf="data.selectedLog?.stats?.vtxDistance?.max">
+              <td>VTX Distance, meters</td>
+              <td>{{data.selectedLog?.stats?.vtxDistance?.min}}</td>
+              <td>{{data.selectedLog?.stats?.vtxDistance?.avg}}</td>
+              <td>{{data.selectedLog?.stats?.vtxDistance?.max}}</td>
+            </tr>
+            <tr *ngIf="data.selectedLog?.stats?.vtxPower?.max">
+              <td>VTX Power, dBm</td>
+              <td>{{data.selectedLog?.stats?.vtxPower?.min}}</td>
+              <td>{{data.selectedLog?.stats?.vtxPower?.avg}}</td>
+              <td>{{data.selectedLog?.stats?.vtxPower?.max}}</td>
+            </tr>
+            <tr *ngIf="data.selectedLog?.stats?.vtxGroundPower?.max">
+              <td>VTX Ground Power, dBm</td>
+              <td>{{data.selectedLog?.stats?.vtxGroundPower?.min}}</td>
+              <td>{{data.selectedLog?.stats?.vtxGroundPower?.avg}}</td>
+              <td>{{data.selectedLog?.stats?.vtxGroundPower?.max}}</td>
             </tr>
             <tr>
               <td>Distance to Home, meters</td>

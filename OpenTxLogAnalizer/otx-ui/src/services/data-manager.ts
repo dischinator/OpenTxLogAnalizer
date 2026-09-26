@@ -1,4 +1,4 @@
-﻿import {ILog, ILogRow, Log, LogRow, OpenTxLogParser} from "./open-tx-log-parser";
+import {ILog, ILogRow, Log, LogRow, OpenTxLogParser} from "./open-tx-log-parser";
 import {SrtParser} from "./srt-parser";
 import {EventEmitter, Injectable} from "@angular/core";
 import {PersistenceService} from "./persistence.service";
@@ -48,7 +48,7 @@ export class DataManager {
     }else this.updateSelectedLog(-1);
   }
 
-  attachDjiSrtLog(file: FileSystemFileEntry) {
+  attachVtxSrtLog(file: FileSystemFileEntry) {
     if (!this.currentLogProject) return;
     const p = this.currentLogProject;
     if (file.name.toLowerCase().endsWith(".srt")) {
@@ -59,6 +59,10 @@ export class DataManager {
         this.updateSelectedLog();
       });
     }else alert('Only SRT files are supported');
+  }
+
+  attachDjiSrtLog(file: FileSystemFileEntry) {
+    this.attachVtxSrtLog(file);
   }
 
   loadSrtLog() {

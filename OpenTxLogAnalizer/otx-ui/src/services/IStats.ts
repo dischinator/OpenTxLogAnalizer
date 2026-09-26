@@ -1,4 +1,4 @@
-﻿export interface IStats {
+export interface IStats {
   gpsSpeed: IStatTriple;
   altitude: IStatTriple;
   cumulativeAscend: IStatTriple;
@@ -26,6 +26,14 @@
   rqlySum: IStatTriple;
   rsnr: IStatTriple;
   tpwr: IStatTriple;
+  vtxDelay: IStatTriple;
+  vtxBitrate: IStatTriple;
+  vtxDistance: IStatTriple;
+  vtxSkyBattery: IStatTriple;
+  vtxGoggleBattery: IStatTriple;
+  vtxPower: IStatTriple;
+  vtxGroundPower: IStatTriple;
+  vtxSignal: IStatTriple;
   djiDelay: IStatTriple;
   djiBitrate: IStatTriple;
 }
@@ -48,6 +56,14 @@ export class Stats implements IStats {
   sats: IStatTriple = new StatTriple();
   throttle: IStatTriple = new StatTriple();
   pitchDeg: IStatTriple = new StatTriple();
+  vtxBitrate: IStatTriple = new StatTriple();
+  vtxDelay: IStatTriple = new StatTriple();
+  vtxDistance: IStatTriple = new StatTriple();
+  vtxSkyBattery: IStatTriple = new StatTriple();
+  vtxGoggleBattery: IStatTriple = new StatTriple();
+  vtxPower: IStatTriple = new StatTriple();
+  vtxGroundPower: IStatTriple = new StatTriple();
+  vtxSignal: IStatTriple = new StatTriple();
   djiBitrate: IStatTriple = new StatTriple();
   djiDelay: IStatTriple = new StatTriple();
   estimatedFlightTime: IStatTriple = new StatTriple();

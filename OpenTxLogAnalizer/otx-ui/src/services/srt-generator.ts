@@ -1,4 +1,4 @@
-﻿import {ILog} from "./open-tx-log-parser";
+import {ILog} from "./open-tx-log-parser";
 import {Injectable} from "@angular/core";
 import {Duration} from "luxon";
 
@@ -17,7 +17,11 @@ export class SrtGenerator {
       if (osdItems.altitude) srt += `Alt ${r.altitude}m `;
       if (osdItems.gpsSpeed) srt += `${r.gpsSpeed}km/h\n`; else if (osdItems.altitude) srt += "\n";
       if (osdItems.rss1) srt += `${r.rss1}dbm ${r.rfmd}:${r.rqly}\n`;
-      if (osdItems.dji && (r.djiDelay || r.djiBitrate)) srt += `DJI ${r.djiDelay}ms ${r.djiBitrate}mBit\n`;
+      if ((osdItems.vtx || osdItems.dji) && (r.vtxDelay || r.vtxBitrate || r.djiDelay || r.djiBitrate)) {
+        const delay = r.vtxDelay ?? r.djiDelay;
+        const bitrate = r.vtxBitrate ?? r.djiBitrate;
+        srt += `VTX ${delay}ms ${bitrate}mBit\n`;
+      }
       if (osdItems.battery) srt += `${r.rxBattery}v ${r.capacity}mAh\n`;
       if (osdItems.power) srt += `${r.power}w ${r.current}a ${r.wattPerKm}wh/km\n`;
       srt += "\n";
@@ -34,6 +38,7 @@ export interface OsdItems {
   altitude?:boolean;
   gpsSpeed?:boolean;
   rss1?:boolean;
+  vtx?:boolean;
   dji?:boolean;
   battery?:boolean;
   power?:boolean;

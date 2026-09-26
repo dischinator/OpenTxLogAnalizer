@@ -30,7 +30,7 @@ import {PersistenceService} from "../services/persistence.service";
         <ngx-file-drop dropZoneLabel="Drop files here" (onFileDrop)="addSrtLog($event)">
           <ng-template ngx-file-drop-content-tmp let-openFileSelector="openFileSelector">
             <ng-container *ngIf="data.currentLogProject?.srt?.name">{{data.currentLogProject?.srt?.name}}</ng-container>
-            <ng-container *ngIf="!data.currentLogProject?.srt?.name">Drop DJI SRT here or</ng-container>
+            <ng-container *ngIf="!data.currentLogProject?.srt?.name">Drop VTX SRT here (DJI / Walksnail) or</ng-container>
             <button class="btn btn-sm btn-outline-primary ms-2" type="button" (click)="openFileSelector()">Browse</button>
           </ng-template>
         </ngx-file-drop>
@@ -128,8 +128,11 @@ export class AppComponent implements OnInit{
       {field: 'GPS'},
       {field: 'rss1'},
       {field: 'rss2'},
-      {field: 'djiDelay'},
-      {field: 'djiBitrate'},
+      {field: 'vtxDelay', headerName: 'VTX Delay'},
+      {field: 'vtxBitrate', headerName: 'VTX Bitrate'},
+      {field: 'vtxDistance', headerName: 'VTX Distance'},
+      {field: 'vtxPower', headerName: 'VTX Power'},
+      {field: 'vtxGroundPower', headerName: 'VTX Gnd Power'},
     ],
     rowData: [],
     onGridReady: e => {
@@ -158,6 +161,6 @@ export class AppComponent implements OnInit{
   addSrtLog(files: NgxFileDropEntry[]) {
     if (files.length == 0 || !files[0].fileEntry.isFile) return;
     const file = files[0].fileEntry as FileSystemFileEntry;
-    this.data.attachDjiSrtLog(file);
+    this.data.attachVtxSrtLog(file);
   }
 }

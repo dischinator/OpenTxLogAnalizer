@@ -28,7 +28,7 @@ import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
         <p><code>#!x:10,y:720,width:1280,height:720,font:Courier New,fontSize:28,color:ffffff</code></p>
         <p>All fields are optional, you can remove header if not used</p>
         <h3>Available fields</h3>
-        <p>gps, lat, lon, gpsSpeed, altitude, vSpeed, 3dSpeed, Sats, distanceToHome, distanceTraveled, rss1, rss2, rqly, rqlySum, rqlyOsd, rsnr, rfmd, tpwr, rxBattery, current, power, capacity, wattPerKm, estimatedRange, estimatedFlightTime, batteryPercent, pitchDeg, rollDeg, yawDeg, throttle, djiDelay, djiBitrate</p>
+        <p>gps, lat, lon, gpsSpeed, altitude, vSpeed, 3dSpeed, Sats, distanceToHome, distanceTraveled, rss1, rss2, rqly, rqlySum, rqlyOsd, rsnr, rfmd, tpwr, rxBattery, current, power, capacity, wattPerKm, estimatedRange, estimatedFlightTime, batteryPercent, pitchDeg, rollDeg, yawDeg, throttle, vtxDelay, vtxBitrate, vtxSignal, vtxChannel, vtxGoggleBattery, vtxSkyBattery, vtxDistance, vtxFlightTime, vtxFrequency, vtxPower, vtxGroundPower, djiDelay, djiBitrate</p>
       </div>
     </ng-template>
     <div class="container-fluid">
@@ -92,6 +92,7 @@ export class SrtExportViewComponent implements OnInit {
     altitude: true,
     gpsSpeed: true,
     rss1: true,
+    vtx: true,
     dji: true,
     battery: true,
     power: true,
@@ -99,7 +100,7 @@ export class SrtExportViewComponent implements OnInit {
   osdLayoutPreview: string = "";
   osdLayout: string = `#!x:10,y:710,font:Courier New,fontSize:30,color:9cfaff
 |GPS| {lat,9} | {lat,10} | {Sats,3}Sats | {distanceToHome,6}Home |
-|DJI|{djiDelay,8}ms | {djiBitrate,6}MBit |         |            |
+|VTX|{vtxDelay,8}ms | {vtxBitrate,6}MBit |         |            |
 |Ele|{rxBattery,9}V | {current,9}A | {power,6}W |{wattPerKm,6}Wh/km |
 |R/C|{rqlyOsd,10} |{rss1,8}dBm |{rsnr,5}SNR |            |
 `;

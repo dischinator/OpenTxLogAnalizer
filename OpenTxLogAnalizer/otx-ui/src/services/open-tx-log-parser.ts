@@ -199,6 +199,17 @@ const csvFieldMap = [
   {title:"SF", field: "SF"},
   {title:"LSW", field: "LSW"},
   {title:"TxBat(V)", field: "txBattery"},
+  {title:"VtxDelay", field: "vtxDelay"},
+  {title:"VtxBitrate", field: "vtxBitrate"},
+  {title:"VtxSignal", field: "vtxSignal"},
+  {title:"VtxChannel", field: "vtxChannel"},
+  {title:"VtxGoggleBattery", field: "vtxGoggleBattery"},
+  {title:"VtxSkyBattery", field: "vtxSkyBattery"},
+  {title:"VtxDistance", field: "vtxDistance"},
+  {title:"VtxFlightTime", field: "vtxFlightTime"},
+  {title:"VtxFrequency", field: "vtxFrequency"},
+  {title:"VtxPower", field: "vtxPower"},
+  {title:"VtxGroundPower", field: "vtxGroundPower"},
   {title:"DjiDelay", field: "djiDelay"},
   {title:"DjiBitrate", field: "djiBitrate"},
   {title:"DjiSignal", field: "djiSignal"},
@@ -311,17 +322,32 @@ export class Log implements ILog {
       while (s < srtLog.rows.length && srtLog.rows[s].timecode! < o.timecode!)
         s++;
       if (s < srtLog.rows.length) {
-        o.djiBitrate = srtLog.rows[s].djiBitrate;
-        o.djiDelay = srtLog.rows[s].djiDelay;
-        o.djiChannel = srtLog.rows[s].djiChannel;
-        o.djiSignal = srtLog.rows[s].djiSignal;
-        o.djiGoggleBattery = srtLog.rows[s].djiGoggleBattery;
+        const sr = srtLog.rows[s];
+        o.vtxBitrate = o.djiBitrate = sr.vtxBitrate ?? sr.djiBitrate;
+        o.vtxDelay = o.djiDelay = sr.vtxDelay ?? sr.djiDelay;
+        o.vtxChannel = o.djiChannel = sr.vtxChannel ?? sr.djiChannel;
+        o.vtxSignal = o.djiSignal = sr.vtxSignal ?? sr.djiSignal;
+        o.vtxGoggleBattery = o.djiGoggleBattery = sr.vtxGoggleBattery ?? sr.djiGoggleBattery;
+        o.vtxSkyBattery = sr.vtxSkyBattery;
+        o.vtxDistance = sr.vtxDistance;
+        o.vtxFlightTime = sr.vtxFlightTime;
+        o.vtxFrequency = sr.vtxFrequency;
+        o.vtxPower = sr.vtxPower;
+        o.vtxGroundPower = sr.vtxGroundPower;
+        o.vtxRcSignal = sr.vtxRcSignal;
       }else {
-        o.djiBitrate = 0;
-        o.djiDelay = 0;
-        o.djiChannel = 0;
-        o.djiSignal = 0;
-        o.djiGoggleBattery = 0;
+        o.vtxBitrate = o.djiBitrate = 0;
+        o.vtxDelay = o.djiDelay = 0;
+        o.vtxChannel = o.djiChannel = 0;
+        o.vtxSignal = o.djiSignal = 0;
+        o.vtxGoggleBattery = o.djiGoggleBattery = 0;
+        o.vtxSkyBattery = 0;
+        o.vtxDistance = 0;
+        o.vtxFlightTime = 0;
+        o.vtxFrequency = 0;
+        o.vtxPower = 0;
+        o.vtxGroundPower = 0;
+        o.vtxRcSignal = 0;
       }
     }
     this.calculate();
@@ -418,6 +444,18 @@ export interface ILogRow {
   djiDelay?: number;
   djiGoggleBattery?: number;
   djiBitrate?: number;
+  vtxSignal?: number;
+  vtxChannel?: number;
+  vtxDelay?: number;
+  vtxGoggleBattery?: number;
+  vtxBitrate?: number;
+  vtxSkyBattery?: number;
+  vtxDistance?: number;
+  vtxFlightTime?: number;
+  vtxFrequency?: number;
+  vtxPower?: number;
+  vtxGroundPower?: number;
+  vtxRcSignal?: number;
 }
 
 export class LogRow implements ILogRow {
@@ -512,4 +550,16 @@ export class LogRow implements ILogRow {
   djiDelay?: number;
   djiGoggleBattery?: number;
   djiBitrate?: number;
+  vtxSignal?: number;
+  vtxChannel?: number;
+  vtxDelay?: number;
+  vtxGoggleBattery?: number;
+  vtxBitrate?: number;
+  vtxSkyBattery?: number;
+  vtxDistance?: number;
+  vtxFlightTime?: number;
+  vtxFrequency?: number;
+  vtxPower?: number;
+  vtxGroundPower?: number;
+  vtxRcSignal?: number;
 }

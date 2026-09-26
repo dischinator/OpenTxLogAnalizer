@@ -269,6 +269,13 @@ export const knownStats: StatDesc[] = [
   {name: "LQ CRSF", field: "rqlySum"},
   {name: "SNR", field: "rsnr"},
   {name: "Tx Power", field: "tpwr", lowIsBetter: true},
+  {name: "VTX Latency", field: "vtxDelay", lowIsBetter: true, numberFormat: ".0f"},
+  {name: "VTX Bitrate", field: "vtxBitrate", numberFormat: ".1f"},
+  {name: "VTX Distance", field: "vtxDistance", numberFormat: ".0f"},
+  {name: "VTX Sky Battery", field: "vtxSkyBattery", numberFormat: ".1f"},
+  {name: "VTX Goggle Battery", field: "vtxGoggleBattery", numberFormat: ".1f"},
+  {name: "VTX Power", field: "vtxPower", numberFormat: ".0f"},
+  {name: "VTX Ground Power", field: "vtxGroundPower", numberFormat: ".0f"},
   {name: "DJI Latency", field: "djiDelay", lowIsBetter: true, numberFormat: ".0f"},
   {name: "DJI Bitrate", field: "djiBitrate", numberFormat: ".1f"},
 ];
