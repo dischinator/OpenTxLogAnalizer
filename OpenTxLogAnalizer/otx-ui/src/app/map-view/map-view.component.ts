@@ -1,8 +1,10 @@
-import {Component, OnInit} from '@angular/core';
+import {AfterViewInit, Component, OnDestroy, OnInit} from '@angular/core';
 import {PersistenceService} from "../../services/persistence.service";
 import {DataManager} from "../../services/data-manager";
 import {StatTriple} from "../../services/IStats";
 import {LogRow} from "../../services/open-tx-log-parser";
+import * as L from 'leaflet';
+import {Subscription} from "rxjs";
 
 @Component({
   selector: 'otx-map-view',
@@ -30,7 +32,7 @@ import {LogRow} from "../../services/open-tx-log-parser";
         </div>
       </div>
       <div class="grid-right-pane" style="display: grid">
-          <div id="map" style="width: 100%; height: 100%"></div>
+          <div id="map" style="width: 100%; height: 100%; min-height: 400px;"></div>
       </div>
     </div>
   `,
@@ -40,97 +42,173 @@ import {LogRow} from "../../services/open-tx-log-parser";
       flex-direction: column;
       flex-grow: 1;
     }
+    ::ng-deep .otx-map-badge-marker {
+      background: transparent;
+      border: none;
+    }
   `]
 })
-export class MapViewComponent implements OnInit {
+export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
   stats = knownStats;
-  private myMap: any;
+  private myMap?: L.Map;
+  private trackLayer: L.LayerGroup = L.layerGroup();
   selectedStat = [this.stats[0]];
   strokeWidth = 14;
-  private objectManager: any;
+  private logChangeSub?: Subscription;
 
   constructor(private persistence: PersistenceService, public data: DataManager) {
     const d = persistence.mapViewPreferences ?? {selectedStat: this.stats[0].field, strokeWidth: 14};
     this.strokeWidth = d.strokeWidth!;
     this.selectedStat = [this.stats.find(x => x.field === d.selectedStat) ?? this.stats[0]];
-    data.selectedLogChange.subscribe(x => this.drawTrack(true));
   }
 
   ngOnInit(): void {
-    ymaps.ready(() => {
-      this.myMap = new ymaps.Map("map", {
-        center: [55.76, 37.64],
-        controls: ['typeSelector', 'fullscreenControl', 'zoomControl', 'rulerControl'],
-        zoom: 7
-      });
-      this.myMap.setType('yandex#hybrid');
-      this.objectManager = new ymaps.ObjectManager({});
+    this.logChangeSub = this.data.selectedLogChange.subscribe(() => {
       this.drawTrack(true);
     });
   }
 
-  drawTrack(setCenter:boolean = false) {
-    if (!this.data.selectedLog || !this.myMap) return;
-    this.persistence.mapViewPreferences = {selectedStat: this.selectedStat[0].field, strokeWidth: this.strokeWidth};
-    this.myMap.geoObjects.removeAll();
-    this.objectManager.removeAll();
-    this.myMap.geoObjects.add(this.objectManager);
-    let coords = this.data.selectedLog.rows.map(x => [x.lat, x.lon]);
-    const objectManagerData: any = {type: "FeatureCollection",
-      features: [{
-        type: 'Feature',
-        id: 0,
-        geometry: {
-          type: 'LineString',
-          coordinates: coords
-        },
-        options: {strokeWidth: parseInt(<any>this.strokeWidth) + 2, strokeColor: ["FFFFFF"]}
-      }]};
-    if (setCenter) {
-      this.myMap.setCenter(this.data.selectedLog.center, this.findZoom(this.data.selectedLog.trackSize));
-    }
-    this.drawMulticolorTrack(objectManagerData);
+  ngAfterViewInit(): void {
+    this.initMap();
   }
 
-  private drawMulticolorTrack(objectManagerData: any) {
-    const rows = this.data.selectedLog!.rows;
+  ngOnDestroy(): void {
+    this.logChangeSub?.unsubscribe();
+    if (this.myMap) {
+      this.myMap.remove();
+      this.myMap = undefined;
+    }
+  }
+
+  private initMap(): void {
+    const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
+    });
+
+    const esriSatLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: 'Tiles &copy; Esri'
+    });
+
+    const openTopoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+      maxZoom: 17,
+      attribution: '&copy; <a href="https://opentopomap.org" target="_blank">OpenTopoMap</a>'
+    });
+
+    this.myMap = L.map('map', {
+      center: [50.1109, 8.6821],
+      zoom: 12,
+      layers: [osmLayer]
+    });
+
+    const baseMaps = {
+      "OpenStreetMap": osmLayer,
+      "Satellite (Esri)": esriSatLayer,
+      "Topo (OpenTopoMap)": openTopoLayer
+    };
+
+    L.control.layers(baseMaps).addTo(this.myMap!);
+    this.trackLayer.addTo(this.myMap!);
+
+    setTimeout(() => {
+      this.myMap?.invalidateSize();
+      this.drawTrack(true);
+    }, 100);
+  }
+
+  drawTrack(setCenter: boolean = false) {
+    if (!this.data.selectedLog || !this.myMap) return;
+    this.persistence.mapViewPreferences = {selectedStat: this.selectedStat[0].field, strokeWidth: this.strokeWidth};
+    this.trackLayer.clearLayers();
+
+    const validRows = this.data.selectedLog.rows.filter(x => x.lat !== undefined && x.lon !== undefined && !isNaN(x.lat) && !isNaN(x.lon));
+    if (validRows.length === 0) return;
+
+    const coords: L.LatLngTuple[] = validRows.map(x => [x.lat!, x.lon!]);
+
+    // White background outline for high contrast
+    const bgLine = L.polyline(coords, {
+      color: '#FFFFFF',
+      weight: parseInt(<any>this.strokeWidth) + 2,
+      opacity: 0.9
+    });
+    this.trackLayer.addLayer(bgLine);
+
+    if (setCenter && coords.length > 0) {
+      const bounds = L.latLngBounds(coords);
+      this.myMap.fitBounds(bounds, { padding: [30, 30] });
+    }
+
+    this.drawMulticolorTrack(validRows);
+  }
+
+  private drawMulticolorTrack(rows: LogRow[]) {
     const selectedStat = this.selectedStat[0];
-    const statData = <StatTriple>(<any>(this.data.selectedLog?.stats))[selectedStat.field]!;
+    const statData = <StatTriple>(<any>(this.data.selectedLog?.stats))?.[selectedStat.field];
+
     for (let i = 0; i < rows.length - 1; i++) {
       const stat = (<any>rows[i])[selectedStat.field] ?? 0;
-      let statValue = (stat - statData.min)/statData.range;
+      let statValue = 0;
+      if (statData && statData.range) {
+        statValue = (stat - statData.min) / statData.range;
+      }
       if (selectedStat.lowIsBetter)
         statValue = 1 - statValue;
       let color = this.getMultiColor(statValue);
-      if (!statData.range)
+      if (!statData || !statData.range)
         color = "00FF00";
-      objectManagerData.features.push({
-        type: 'Feature',
-        id: i,
-        geometry: {
-          type: 'LineString',
-          coordinates: [[rows[i].lat, rows[i].lon], [rows[i + 1].lat, rows[i + 1].lon]]
-        },
-        properties: {balloonContent : `[${i+1}] ${stat}`, hintContent: `${stat}`},
-        options: {
-          strokeWidth: this.strokeWidth, strokeColor: color, zIndex: 1000, zIndexActive: 1500
-        }
+
+      const segment = L.polyline([[rows[i].lat!, rows[i].lon!], [rows[i + 1].lat!, rows[i + 1].lon!]], {
+        color: '#' + color,
+        weight: parseInt(<any>this.strokeWidth),
+        opacity: 0.95
       });
+      segment.bindTooltip(`[${i + 1}] ${stat}`, { sticky: true });
+      this.trackLayer.addLayer(segment);
     }
-    this.objectManager.add(objectManagerData);
+
     this.drawMarkers();
+  }
+
+  private createBadgeIcon(text: string, badgeClass: string) {
+    return L.divIcon({
+      className: 'otx-map-badge-marker',
+      html: `<span class="badge ${badgeClass} text-white shadow-sm" style="white-space: nowrap; font-size: 11px;">${text}</span>`,
+      iconSize: undefined,
+      iconAnchor: [12, 10]
+    });
   }
 
   private drawMarkers() {
     const selectedStat = this.selectedStat[0];
-    const statData = <StatTriple>(<any>(this.data.selectedLog?.stats))[selectedStat.field]!;
+    const statData = <StatTriple>(<any>(this.data.selectedLog?.stats))?.[selectedStat.field];
+    if (!statData) return;
+
     const points = this.findInterestingPoint();
-    this.myMap.geoObjects.add(new ymaps.Placemark([points[0].lat, points[0].lon], {iconCaption: `MIN: ` + statData.min}));
-    this.myMap.geoObjects.add(new ymaps.Placemark([points[1].lat, points[1].lon], {iconCaption: `MAX: ` + statData.max}));
+    if (points.length < 2) return;
+
+    if (points[0]?.lat !== undefined && points[0]?.lon !== undefined) {
+      const minMarker = L.marker([points[0].lat, points[0].lon], {
+        icon: this.createBadgeIcon(`MIN: ${statData.min}`, 'bg-success')
+      }).bindPopup(`<b>MIN ${selectedStat.name}:</b> ${statData.min}`);
+      this.trackLayer.addLayer(minMarker);
+    }
+
+    if (points[1]?.lat !== undefined && points[1]?.lon !== undefined) {
+      const maxMarker = L.marker([points[1].lat, points[1].lon], {
+        icon: this.createBadgeIcon(`MAX: ${statData.max}`, 'bg-danger')
+      }).bindPopup(`<b>MAX ${selectedStat.name}:</b> ${statData.max}`);
+      this.trackLayer.addLayer(maxMarker);
+    }
 
     for (let i = 2; i < points.length; i++) {
+      if (points[i]?.lat === undefined || points[i]?.lon === undefined) continue;
       const stat = (<any>points[i])[selectedStat.field] ?? 0;
-      this.myMap.geoObjects.add(new ymaps.Placemark([points[i].lat, points[i].lon], {iconCaption: `${stat}`}));
+      const marker = L.marker([points[i].lat!, points[i].lon!], {
+        icon: this.createBadgeIcon(`${stat}`, 'bg-primary')
+      }).bindPopup(`[${points[i].index}] ${selectedStat.name}: ${stat}`);
+      this.trackLayer.addLayer(marker);
     }
   }
 
@@ -211,24 +289,7 @@ export class MapViewComponent implements OnInit {
       return "0" + s;
     return s;
   }
-
-  private findZoom(dist: number) {
-    let zoom = 11;
-    if (dist < 20480) zoom = 11;
-    if (dist < 10240) zoom = 12;
-    if (dist < 5120) zoom = 13;
-    if (dist < 2560) zoom = 14;
-    if (dist < 1280) zoom = 15;
-    if (dist < 640) zoom = 16;
-    if (dist < 320) zoom = 17;
-    if (dist < 160) zoom = 18;
-    if (dist < 80) zoom = 19;
-
-    return zoom;
-  }
 }
-
-declare const ymaps: any;
 
 export interface MapViewPreferences {
   strokeWidth?: number;
