@@ -27,6 +27,7 @@ Format: Marked, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 `;
     this.lastMaximum = {};
     let prevTimecode = Duration.fromMillis(0);
+    if (!log?.rows) return srt;
     for (let i = 0; i < log.rows.length; i++) {
       const r = log.rows[i];
       const timecode = Duration.fromMillis((r.timecode ?? 0) * 1000);
@@ -71,7 +72,7 @@ Format: Marked, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
       const field = m[1];
       const padding = parseInt(m[2] ?? "0");
       const format = m[3] ?? "number";
-      const value = this.formatValue(field, row[field], padding, format, log);
+      const value = this.formatValue(field, row?.[field], padding, format, log);
       osd += osdLayout.substring(prevIndex, m.index) + value;
       prevIndex = m.index! + m[0].length;
     }
@@ -84,13 +85,17 @@ Format: Marked, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     switch (format) {
       case "barReverse":
       case "bar":
+        const statData = <StatTriple>(<any>log?.stats)?.[field];
+        if (!statData || !statData.range || value === undefined || value === null || isNaN(value)) {
+          return "-".repeat(padding);
+        }
         let lastMax = this.lastMaximum[field] ?? 0;
         lastMax--;
         this.lastMaximum[field] = lastMax;
-        const statData = <StatTriple>(<any>log.stats)[field];
         let normalizedValue = (value - statData.min)/statData.range;
         if (statDef?.invertOsdBar)
           normalizedValue = 1 - normalizedValue;
+        normalizedValue = Math.max(0, Math.min(1, normalizedValue));
         const paddedValue = Math.round(normalizedValue * padding);
         if (lastMax < paddedValue) this.lastMaximum[field] = lastMax = paddedValue;
         // if (lastMax > paddedValue)
@@ -118,6 +123,7 @@ Format: Marked, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
   getPreview(osdLayout: string, log: Log) {
     this.getLayoutSettings(osdLayout);
+    if (!log?.rows?.length) return "";
     const sampleRowIndex = Math.floor(log.rows.length / 2);
     const row = <any>log.rows[sampleRowIndex];
     return this.getOsd(osdLayout, row, log);
@@ -130,7 +136,9 @@ function formatTime(d: Duration) {
 }
 
 function pad(s?: any, n?: number, symbol: string = " ", numberFormat: string|undefined = undefined) {
-  if (s === undefined) return "";
+  if (s === undefined || s === null || (typeof s === "number" && isNaN(s))) {
+    return n && n > 0 ? symbol.repeat(n) : "";
+  }
   if (n === undefined) return s;
   if (typeof s === "number" && numberFormat)
     s = format(numberFormat)(s);
