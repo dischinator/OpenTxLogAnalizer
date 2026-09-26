@@ -91,6 +91,19 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
       attribution: 'Tiles &copy; Esri'
     });
 
+    const hybridLayer = L.layerGroup([
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri'
+      }),
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19
+      }),
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19
+      })
+    ]);
+
     const openTopoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
       maxZoom: 17,
       attribution: '&copy; <a href="https://opentopomap.org" target="_blank">OpenTopoMap</a>'
@@ -104,6 +117,7 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const baseMaps = {
       "OpenStreetMap": osmLayer,
+      "Hybrid (Sat + Straßen)": hybridLayer,
       "Satellite (Esri)": esriSatLayer,
       "Topo (OpenTopoMap)": openTopoLayer
     };
