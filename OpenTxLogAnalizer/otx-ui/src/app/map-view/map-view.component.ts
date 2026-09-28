@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, OnDestroy, OnInit} from '@angular/core';
+import {AfterViewInit, Component, HostListener, OnDestroy, OnInit} from '@angular/core';
 import {PersistenceService} from "../../services/persistence.service";
 import {DataManager} from "../../services/data-manager";
 import {StatTriple} from "../../services/IStats";
@@ -30,6 +30,30 @@ import {Subscription} from "rxjs";
             <option [value]="16">16</option>
           </select>
         </div>
+        <div class="mb-3">
+          <div class="d-flex gap-1">
+            <button class="btn btn-sm flex-grow-1"
+                    [class.btn-warning]="measuring"
+                    [class.btn-outline-primary]="!measuring"
+                    (click)="toggleMeasure()">
+              <span *ngIf="!measuring && measurePoints.length === 0">📏 Entfernung messen</span>
+              <span *ngIf="!measuring && measurePoints.length > 0">📏 Weiter messen</span>
+              <span *ngIf="measuring">✔ Messmodus beenden <small class="opacity-75">(ESC)</small></span>
+            </button>
+            <button *ngIf="measurePoints.length > 0"
+                    class="btn btn-sm btn-outline-danger"
+                    (click)="clearMeasure()"
+                    title="Messung löschen">
+              ✕
+            </button>
+          </div>
+          <div *ngIf="measurePoints.length > 0" class="mt-1 text-muted text-center" style="font-size: 11px;">
+            Punkte verschiebbar &bull; Rechtsklick löscht Punkt
+          </div>
+          <div *ngIf="measureTotal > 0" class="mt-1 text-center small">
+            <strong>Gesamt: {{ formatDist(measureTotal) }}</strong>
+          </div>
+        </div>
       </div>
       <div class="grid-right-pane" style="display: grid">
           <div id="map" style="width: 100%; height: 100%; min-height: 400px;"></div>
@@ -42,9 +66,64 @@ import {Subscription} from "rxjs";
       flex-direction: column;
       flex-grow: 1;
     }
-    ::ng-deep .otx-map-badge-marker {
+    ::ng-deep .otx-map-badge-marker,
+    ::ng-deep .measure-badge-icon {
       background: transparent;
       border: none;
+    }
+    ::ng-deep .measure-label {
+      background: rgba(255,255,255,0.95);
+      color: #222;
+      border: 1px solid #555;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      pointer-events: none;
+      user-select: none;
+    }
+    ::ng-deep .measure-label-total {
+      background: #1a73e8;
+      color: #fff;
+      border-color: #0d5bbd;
+    }
+    ::ng-deep .measure-dot-marker {
+      background: transparent !important;
+      border: none !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      cursor: move !important;
+    }
+    ::ng-deep .measure-dot-inner {
+      width: 14px;
+      height: 14px;
+      background: #1a73e8;
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.45);
+      cursor: move !important;
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: none;
+    }
+    ::ng-deep .measure-dot-marker:hover .measure-dot-inner {
+      background: #ea4335;
+      width: 18px;
+      height: 18px;
+      box-shadow: 0 0 0 5px rgba(234, 67, 53, 0.35), 0 3px 8px rgba(0,0,0,0.5);
+    }
+    ::ng-deep .measure-dot-marker.is-dragging .measure-dot-inner {
+      background: #e65100;
+      width: 20px;
+      height: 20px;
+      box-shadow: 0 0 0 6px rgba(230, 81, 0, 0.4), 0 4px 10px rgba(0,0,0,0.6);
+    }
+    ::ng-deep .leaflet-drag-target,
+    ::ng-deep .leaflet-dragging .measure-dot-marker,
+    ::ng-deep .leaflet-dragging .measure-dot-marker * {
+      cursor: move !important;
     }
   `]
 })
@@ -55,6 +134,38 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedStat = [this.stats[0]];
   strokeWidth = 14;
   private logChangeSub?: Subscription;
+
+  // ── Measurement state ────────────────────────────────────────────────────
+  measuring = false;
+  measureTotal = 0;
+  measurePoints: L.LatLng[] = [];
+  private measureLayer: L.LayerGroup = L.layerGroup();
+  private measureMarkers: L.Marker[] = [];
+  private measureLines: L.Polyline[] = [];
+  private measureLabels: L.Marker[] = [];
+  private measureTotalLabel?: L.Marker;
+  private measurePreviewLine?: L.Polyline;
+  private lastMouseLatLng?: L.LatLng;
+  private isDraggingMarker = false;
+
+  private readonly onMapClick = (e: L.LeafletMouseEvent) => {
+    if (this.isDraggingMarker) return;
+    this.addMeasurePoint(e.latlng);
+  };
+  private readonly onMapMouseMove = (e: L.LeafletMouseEvent) => this.updatePreview(e.latlng);
+  private readonly onMapRightClick = () => {
+    if (this.measuring) {
+      this.toggleMeasure();
+    }
+  };
+
+  @HostListener('window:keydown.escape', ['$event'])
+  onEscapeKey(event?: KeyboardEvent): void {
+    if (this.measuring) {
+      event?.preventDefault();
+      this.toggleMeasure();
+    }
+  }
 
   constructor(private persistence: PersistenceService, public data: DataManager) {
     const d = persistence.mapViewPreferences ?? {selectedStat: this.stats[0].field, strokeWidth: 14};
@@ -74,10 +185,244 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.logChangeSub?.unsubscribe();
+    this.clearMeasure();
     if (this.myMap) {
       this.myMap.remove();
       this.myMap = undefined;
     }
+  }
+
+  // ── Distance measurement ─────────────────────────────────────────────────
+  toggleMeasure(): void {
+    if (!this.myMap) return;
+    this.measuring = !this.measuring;
+    if (this.measuring) {
+      this.myMap.getContainer().style.cursor = 'crosshair';
+      this.myMap.on('click', this.onMapClick);
+      this.myMap.on('mousemove', this.onMapMouseMove);
+      this.myMap.on('contextmenu', this.onMapRightClick);
+    } else {
+      this.myMap.getContainer().style.cursor = '';
+      this.myMap.off('click', this.onMapClick);
+      this.myMap.off('mousemove', this.onMapMouseMove);
+      this.myMap.off('contextmenu', this.onMapRightClick);
+      if (this.measurePreviewLine) {
+        this.measureLayer.removeLayer(this.measurePreviewLine);
+        this.measurePreviewLine = undefined;
+      }
+    }
+  }
+
+  clearMeasure(): void {
+    if (this.measuring) {
+      this.toggleMeasure();
+    }
+    this.measureLayer.clearLayers();
+    this.measurePoints = [];
+    this.measureMarkers = [];
+    this.measureLines = [];
+    this.measureLabels = [];
+    this.measureTotalLabel = undefined;
+    this.measurePreviewLine = undefined;
+    this.measureTotal = 0;
+  }
+
+  private addMeasurePoint(latlng: L.LatLng): void {
+    if (this.isDraggingMarker) return;
+    this.measurePoints.push(latlng);
+    this.rebuildMeasureLayers();
+  }
+
+  private createMeasureMarker(pt: L.LatLng, index: number): L.Marker {
+    const dot = L.divIcon({
+      className: 'measure-dot-marker',
+      html: '<div class="measure-dot-inner"></div>',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14]
+    });
+
+    const marker = L.marker(pt, {
+      icon: dot,
+      draggable: true,
+      title: 'Ziehen zum Feinjustieren, Rechtsklick zum Löschen'
+    });
+
+    marker.on('dragstart', () => {
+      this.isDraggingMarker = true;
+      marker.getElement()?.classList.add('is-dragging');
+    });
+
+    marker.on('drag', () => {
+      this.onMarkerDrag(index, marker.getLatLng());
+    });
+
+    marker.on('dragend', () => {
+      marker.getElement()?.classList.remove('is-dragging');
+      this.measurePoints[index] = marker.getLatLng();
+      setTimeout(() => {
+        this.isDraggingMarker = false;
+        this.rebuildMeasureLayers();
+      }, 50);
+    });
+
+    marker.on('click', (e: L.LeafletMouseEvent) => {
+      L.DomEvent.stopPropagation(e);
+    });
+
+    marker.on('contextmenu', (e: L.LeafletMouseEvent) => {
+      L.DomEvent.stopPropagation(e);
+      this.measurePoints.splice(index, 1);
+      this.rebuildMeasureLayers();
+    });
+
+    return marker;
+  }
+
+  private onMarkerDrag(index: number, newLatLng: L.LatLng): void {
+    this.measurePoints[index] = newLatLng;
+
+    // Update previous segment line and label
+    if (index > 0 && this.measureLines[index - 1]) {
+      const pPrev = this.measurePoints[index - 1];
+      this.measureLines[index - 1].setLatLngs([pPrev, newLatLng]);
+      const midPrev = L.latLng((pPrev.lat + newLatLng.lat) / 2, (pPrev.lng + newLatLng.lng) / 2);
+      this.measureLabels[index - 1]?.setLatLng(midPrev);
+      this.measureLabels[index - 1]?.setIcon(L.divIcon({
+        className: 'measure-badge-icon',
+        html: `<span class="measure-label">${this.formatDist(pPrev.distanceTo(newLatLng))}</span>`,
+        iconAnchor: [18, 10]
+      }));
+    }
+
+    // Update next segment line and label
+    if (index < this.measurePoints.length - 1 && this.measureLines[index]) {
+      const pNext = this.measurePoints[index + 1];
+      this.measureLines[index].setLatLngs([newLatLng, pNext]);
+      const midNext = L.latLng((newLatLng.lat + pNext.lat) / 2, (newLatLng.lng + pNext.lng) / 2);
+      this.measureLabels[index]?.setLatLng(midNext);
+      this.measureLabels[index]?.setIcon(L.divIcon({
+        className: 'measure-badge-icon',
+        html: `<span class="measure-label">${this.formatDist(newLatLng.distanceTo(pNext))}</span>`,
+        iconAnchor: [18, 10]
+      }));
+    }
+
+    // Update total
+    this.updateMeasureTotal();
+
+    // If last point was moved and preview line exists, update preview line
+    if (index === this.measurePoints.length - 1 && this.measurePreviewLine && this.lastMouseLatLng) {
+      this.measurePreviewLine.setLatLngs([newLatLng, this.lastMouseLatLng]);
+    }
+  }
+
+  private rebuildMeasureLayers(): void {
+    this.measureLayer.clearLayers();
+    this.measureMarkers = [];
+    this.measureLines = [];
+    this.measureLabels = [];
+    this.measureTotalLabel = undefined;
+    this.measurePreviewLine = undefined;
+
+    if (this.measurePoints.length === 0) {
+      this.measureTotal = 0;
+      return;
+    }
+
+    // 1. Lines and segment labels
+    for (let i = 0; i < this.measurePoints.length - 1; i++) {
+      const p1 = this.measurePoints[i];
+      const p2 = this.measurePoints[i + 1];
+
+      const line = L.polyline([p1, p2], {
+        color: '#1a73e8',
+        weight: 2,
+        dashArray: '6 4',
+        interactive: false
+      }).addTo(this.measureLayer);
+      this.measureLines.push(line);
+
+      const mid = L.latLng((p1.lat + p2.lat) / 2, (p1.lng + p2.lng) / 2);
+      const segDist = p1.distanceTo(p2);
+      const label = L.marker(mid, {
+        icon: L.divIcon({
+          className: 'measure-badge-icon',
+          html: `<span class="measure-label">${this.formatDist(segDist)}</span>`,
+          iconAnchor: [18, 10]
+        }),
+        interactive: false
+      }).addTo(this.measureLayer);
+      this.measureLabels.push(label);
+    }
+
+    // 2. Draggable Markers
+    this.measurePoints.forEach((pt, idx) => {
+      const marker = this.createMeasureMarker(pt, idx);
+      marker.addTo(this.measureLayer);
+      this.measureMarkers.push(marker);
+    });
+
+    // 3. Total calculation & label
+    this.updateMeasureTotal();
+
+    // 4. Preview line if measuring
+    if (this.measuring && this.lastMouseLatLng && this.measurePoints.length > 0) {
+      const lastPt = this.measurePoints[this.measurePoints.length - 1];
+      this.measurePreviewLine = L.polyline([lastPt, this.lastMouseLatLng], {
+        color: '#1a73e8', weight: 2, dashArray: '4 4', opacity: 0.6, interactive: false
+      }).addTo(this.measureLayer);
+    }
+  }
+
+  private updateMeasureTotal(): void {
+    let total = 0;
+    for (let i = 0; i < this.measurePoints.length - 1; i++) {
+      total += this.measurePoints[i].distanceTo(this.measurePoints[i + 1]);
+    }
+    this.measureTotal = total;
+
+    if (this.measurePoints.length > 2) {
+      const lastPt = this.measurePoints[this.measurePoints.length - 1];
+      const totalHtml = `<span class="measure-label measure-label-total">Σ ${this.formatDist(total)}</span>`;
+      if (this.measureTotalLabel) {
+        this.measureTotalLabel.setLatLng(lastPt);
+        this.measureTotalLabel.setIcon(L.divIcon({
+          className: 'measure-badge-icon',
+          html: totalHtml,
+          iconAnchor: [-12, 10]
+        }));
+      } else {
+        this.measureTotalLabel = L.marker(lastPt, {
+          icon: L.divIcon({
+            className: 'measure-badge-icon',
+            html: totalHtml,
+            iconAnchor: [-12, 10]
+          }),
+          interactive: false
+        }).addTo(this.measureLayer);
+      }
+    } else if (this.measureTotalLabel) {
+      this.measureLayer.removeLayer(this.measureTotalLabel);
+      this.measureTotalLabel = undefined;
+    }
+  }
+
+  private updatePreview(latlng: L.LatLng): void {
+    this.lastMouseLatLng = latlng;
+    if (!this.measuring || this.isDraggingMarker || this.measurePoints.length === 0) return;
+    const prev = this.measurePoints[this.measurePoints.length - 1];
+    if (this.measurePreviewLine) {
+      this.measurePreviewLine.setLatLngs([prev, latlng]);
+    } else {
+      this.measurePreviewLine = L.polyline([prev, latlng], {
+        color: '#1a73e8', weight: 2, dashArray: '4 4', opacity: 0.6, interactive: false
+      }).addTo(this.measureLayer);
+    }
+  }
+
+  formatDist(meters: number): string {
+    if (meters >= 1000) return (meters / 1000).toFixed(2) + ' km';
+    return Math.round(meters) + ' m';
   }
 
   private initMap(): void {
@@ -124,6 +469,7 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
     L.control.layers(baseMaps).addTo(this.myMap!);
     this.trackLayer.addTo(this.myMap!);
+    this.measureLayer.addTo(this.myMap!);
 
     setTimeout(() => {
       this.myMap?.invalidateSize();
