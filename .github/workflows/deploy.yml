@@ -1,0 +1,47 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+
+      - name: setup node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: OpenTxLogAnalizer/package-lock.json
+
+      - name: build application
+        run: |
+          cd OpenTxLogAnalizer
+          npm ci
+          npm run build
+
+      - name: upload pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # change 'dist' if your build output folder is 'build' or 'public'
+          path: OpenTxLogAnalizer/dist
+
+      - name: deploy to github pages
+        id: deployment
+        uses: actions/deploy-pages@v4
