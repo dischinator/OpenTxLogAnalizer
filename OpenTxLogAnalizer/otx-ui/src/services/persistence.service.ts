@@ -37,6 +37,30 @@ export class PersistenceService {
     this.save("chartsToDraw", v);
   }
 
+  get chartsNormalized(): boolean {
+    return this.load("chartsNormalized") ?? false;
+  }
+
+  set chartsNormalized(v: boolean) {
+    this.save("chartsNormalized", v);
+  }
+
+  get chartsSmoothed(): boolean {
+    return this.load("chartsSmoothed") ?? false;
+  }
+
+  set chartsSmoothed(v: boolean) {
+    this.save("chartsSmoothed", v);
+  }
+
+  get chartsSmoothWindow(): number {
+    return this.load("chartsSmoothWindow") ?? 7;
+  }
+
+  set chartsSmoothWindow(v: number) {
+    this.save("chartsSmoothWindow", v);
+  }
+
   get selectedTabPane(): number|undefined {
     return this.load("selectedTabPane");
   }
