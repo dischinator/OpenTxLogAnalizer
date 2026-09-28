@@ -1,0 +1,15 @@
+1
+00:00:00,000 --> 00:00:00,384
+Signal:4 CH:5 Hz:5620000 FlightTime:0 Sp=31 Gp=32 SBat:16.5V GBat:11.6V Delay:198ms Bitrate:11.0Mbps Distance:1m
+
+2
+00:00:00,384 --> 00:00:00,534
+Signal:4 CH:5 Hz:5620000 FlightTime:0 Sp=31 Gp=32 SBat:16.5V GBat:11.6V Delay:63ms Bitrate:21.0Mbps Distance:1m
+
+3
+00:00:00,534 --> 00:00:00,684
+Signal:4 CH:5 Hz:5620000 FlightTime:0 Sp=31 Gp=32 SBat:16.5V GBat:11.6V Delay:61ms Bitrate:21.0Mbps Distance:1m
+
+4
+00:00:00,684 --> 00:00:00,834
+Signal:4 CH:5 Hz:5620000 FlightTime:0 Sp=31 Gp=32 SBat:16.5V GBat:11.6V Delay:61ms Bitrate:10.0Mbps Distance:3m

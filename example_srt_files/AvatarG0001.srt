@@ -1,0 +1,12 @@
+1
+00:00:00,000 --> 00:00:00,150
+Signal:4 CH:7 FlightTime:0 SBat:11.5V GBat:12.0V Delay:36ms Bitrate:25.0Mbps Distance:0m
+
+2
+00:00:00,150 --> 00:00:00,300
+Signal:4 CH:7 FlightTime:0 SBat:11.5V GBat:12.0V Delay:35ms Bitrate:25.0Mbps Distance:0m
+
+3
+00:00:00,300 --> 00:00:00,449
+Signal:4 CH:7 FlightTime:0 SBat:11.5V GBat:12.0V Delay:35ms Bitrate:25.0Mbps Distance:0m
+
