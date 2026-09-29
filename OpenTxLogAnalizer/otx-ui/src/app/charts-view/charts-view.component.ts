@@ -120,7 +120,7 @@ export class ChartsViewComponent implements OnInit {
   selectedStat: StatDesc[] = [];
   normalize = false;
   smooth = false;
-  smoothWindow = 7;
+  smoothWindow = 32;
   statRanges: { name: string; min: string; max: string }[] = [];
 
   xAxisTypes: xAxisType[] = [
