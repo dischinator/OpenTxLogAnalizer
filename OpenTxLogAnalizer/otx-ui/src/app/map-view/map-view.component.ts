@@ -4,6 +4,7 @@ import {DataManager} from "../../services/data-manager";
 import {StatTriple} from "../../services/IStats";
 import {LogRow} from "../../services/open-tx-log-parser";
 import * as L from 'leaflet';
+import './leaflet-smooth-wheel-zoom';
 import {Subscription} from "rxjs";
 
 @Component({
@@ -1020,7 +1021,11 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
     this.myMap = L.map('map', {
       center: [50.1109, 8.6821],
       zoom: 12,
-      layers: [osmLayer]
+      layers: [osmLayer],
+      scrollWheelZoom: false,
+      smoothWheelZoom: true,
+      smoothSensitivity: 1,
+      zoomSnap: 0
     });
 
     const baseMaps = {
