@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Premium Aerospace Blue Gradient -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="45%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
+    </linearGradient>
+    <linearGradient id="canopy" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+    <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="2.5" stdDeviation="2.5" flood-color="#0b132b" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- Squircle Base -->
+  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
+  <rect width="62" height="62" x="1" y="1" rx="15" fill="none" stroke="rgba(255,255,255,0.32)" stroke-width="1.2"/>
+
+  <!-- Supersonic Jet Silhouette rotated 45° -->
+  <g transform="translate(34, 30) rotate(45) translate(-32, -32)" filter="url(#shadow)">
+    <!-- Shadowed Port Wing & Left Fuselage -->
+    <path d="M 32 4
+             L 32 58
+             L 30.5 53
+             L 21.5 56
+             L 21.5 53.5
+             L 29 47
+             L 28.5 35
+             L 8.5 41
+             L 8 37.5
+             L 28 22
+             L 32 4 Z"
+          fill="#e2e8f0"/>
+          
+    <!-- Lit Starboard Wing & Right Fuselage -->
+    <path d="M 32 4
+             L 32 58
+             L 33.5 53
+             L 42.5 56
+             L 42.5 53.5
+             L 35 47
+             L 35.5 35
+             L 55.5 41
+             L 56 37.5
+             L 36 22
+             L 32 4 Z"
+          fill="#ffffff"/>
+
+    <!-- Cockpit Canopy Glass -->
+    <polygon points="32,13 34.2,23 32,27.5 29.8,23" fill="url(#canopy)"/>
+    
+    <!-- Canopy Glint -->
+    <polygon points="32,14 33.5,22 32,24" fill="rgba(255,255,255,0.6)"/>
+  </g>
+</svg>
