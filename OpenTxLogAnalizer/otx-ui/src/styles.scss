@@ -50,3 +50,71 @@ div.osd-preview {
   background-image: url('assets/osd-preview-bg.jpg');
   text-shadow: 3px 3px 5px #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
 }
+
+/* ── Leaflet Replay HUD & Player Overlay ── */
+.replay-hud, .replay-bottom-bar {
+  position: absolute; z-index: 1100;
+  background: rgba(22, 27, 34, 0.93);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #e6edf3; user-select: none;
+}
+.replay-hud {
+  top: 12px; right: 12px; min-width: 210px;
+  border-radius: 8px; padding: 10px 14px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.45);
+}
+.replay-hud-title { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: #8b949e; }
+.replay-status-dot { width: 8px; height: 8px; border-radius: 50%; background: #ffab00; display: inline-block; }
+.replay-status-dot.playing { background: #00e676; box-shadow: 0 0 6px #00e676; }
+.replay-hud-body { display: grid; gap: 5px; }
+.replay-hud-metric { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 2px 0; }
+.replay-hud-metric:last-child { border-bottom: none; }
+.metric-label { font-size: 11px; font-weight: 600; color: #8b949e; display: flex; align-items: center; gap: 4px; }
+.metric-val { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.metric-val .unit { font-size: 11px; font-weight: 500; opacity: 0.8; }
+
+.replay-bottom-bar {
+  bottom: 16px; left: 50%; transform: translateX(-50%);
+  width: calc(100% - 32px); max-width: 680px;
+  border-radius: 30px; padding: 6px 14px;
+  box-shadow: 0 6px 22px rgba(0,0,0,0.55);
+}
+.replay-slider { cursor: pointer; accent-color: #00d2ff; }
+
+/* ── Leaflet Plane & Measurement Markers ── */
+.replay-plane-marker,
+.otx-map-badge-marker,
+.measure-badge-icon,
+.measure-dot-marker { background: transparent !important; border: none !important; }
+
+.replay-plane-wrap {
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  position: relative; transform-origin: 18px 18px; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.75));
+}
+.replay-plane-svg { filter: drop-shadow(0 0 5px rgba(0,229,255,0.95)); z-index: 2; }
+.replay-plane-ping {
+  position: absolute; top: 4px; left: 4px; width: 28px; height: 28px;
+  border-radius: 50%; border: 2px solid rgba(0,229,255,0.75);
+  animation: plane-ping 1.6s cubic-bezier(0,0,0.2,1) infinite; z-index: 1;
+}
+@keyframes plane-ping { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(2.2); opacity: 0; } }
+
+.measure-label {
+  background: rgba(255,255,255,0.95); color: #222; border: 1px solid #555;
+  border-radius: 4px; padding: 1px 5px; font-size: 11px; font-weight: 600;
+  white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  pointer-events: none; user-select: none;
+}
+.measure-label-total { background: #1a73e8; color: #fff; border-color: #0d5bbd; }
+.measure-dot-marker { display: flex !important; align-items: center !important; justify-content: center !important; cursor: move !important; }
+.measure-dot-inner {
+  width: 14px; height: 14px; background: #1a73e8; border: 2px solid #fff;
+  border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.45); cursor: move !important;
+  transition: all 0.15s ease;
+}
+.measure-dot-marker:hover .measure-dot-inner { background: #ea4335; width: 18px; height: 18px; }
+.measure-dot-marker.is-dragging .measure-dot-inner { background: #e65100; width: 20px; height: 20px; }
+.leaflet-drag-target, .leaflet-dragging .measure-dot-marker, .leaflet-dragging .measure-dot-marker * { cursor: move !important; }
+

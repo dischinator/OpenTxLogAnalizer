@@ -30,6 +30,78 @@ import {Subscription} from "rxjs";
             <option [value]="16">16</option>
           </select>
         </div>
+
+        <!-- ── Replay Section (Left Pane) ─────────────────────────────────── -->
+        <div class="mb-3 border rounded p-2 bg-light">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <strong style="font-size: 13px;">✈ Flug Replay</strong>
+            <span *ngIf="replayActive" class="badge" [class.bg-success]="replayPlaying" [class.bg-warning]="!replayPlaying">
+              {{ replayPlaying ? 'Spielt' : 'Pausiert' }}
+            </span>
+          </div>
+
+          <button class="btn btn-sm w-100 mb-2"
+                  [class.btn-success]="!replayActive"
+                  [class.btn-warning]="replayActive && replayPlaying"
+                  [class.btn-primary]="replayActive && !replayPlaying"
+                  [disabled]="validRows.length === 0"
+                  (click)="toggleReplay()">
+            <span *ngIf="!replayActive">▶ Flug simulieren</span>
+            <span *ngIf="replayActive && replayPlaying">⏸ Pause</span>
+            <span *ngIf="replayActive && !replayPlaying">▶ Fortsetzen</span>
+          </button>
+
+          <div *ngIf="replayActive">
+            <button class="btn btn-sm btn-outline-danger w-100 mb-2" (click)="stopReplay()">
+              ⏹ Replay beenden
+            </button>
+
+            <div class="mb-2">
+              <label class="form-label mb-1 text-muted" style="font-size: 11px;">Geschwindigkeit:</label>
+              <div class="btn-group btn-group-sm w-100">
+                <button *ngFor="let spd of speeds"
+                        class="btn btn-xs py-0 px-1"
+                        [class.btn-primary]="replaySpeed === spd"
+                        [class.btn-outline-secondary]="replaySpeed !== spd"
+                        (click)="setSpeed(spd)">
+                  {{ spd }}x
+                </button>
+              </div>
+            </div>
+
+            <div class="form-check form-switch mb-1">
+              <input class="form-check-input" type="checkbox" id="followPlaneCheck" [(ngModel)]="replayFollowPlane">
+              <label class="form-check-label small" for="followPlaneCheck">Flugzeug folgen</label>
+            </div>
+
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" id="loopCheck" [(ngModel)]="replayLoop">
+              <label class="form-check-label small" for="loopCheck">Endlosschleife</label>
+            </div>
+
+            <!-- Live Telemetry Card -->
+            <div class="p-2 bg-white rounded border small">
+              <div class="d-flex justify-content-between mb-1">
+                <span class="text-muted">Speed:</span>
+                <strong class="text-primary">{{ currentSpeed | number:'1.1-1' }} km/h</strong>
+              </div>
+              <div class="d-flex justify-content-between mb-1">
+                <span class="text-muted">Höhe:</span>
+                <strong class="text-warning text-darken">{{ currentAltitude | number:'1.1-1' }} m</strong>
+              </div>
+              <div class="d-flex justify-content-between mb-1">
+                <span class="text-muted">Kapazität:</span>
+                <strong class="text-success">{{ currentCapacity | number:'1.0-0' }} mAh</strong>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span class="text-muted">Zeit:</span>
+                <span class="font-monospace text-muted">{{ formatTime(currentDuration) }} / {{ formatTime(totalDuration) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Distance Measurement ──────────────────────────────────────── -->
         <div class="mb-3">
           <div class="d-flex gap-1">
             <button class="btn btn-sm flex-grow-1"
@@ -55,75 +127,210 @@ import {Subscription} from "rxjs";
           </div>
         </div>
       </div>
-      <div class="grid-right-pane" style="display: grid">
+
+      <!-- ── Right Pane (Map + Overlays) ────────────────────────────────── -->
+      <div class="grid-right-pane position-relative" style="display: grid; min-height: 450px;">
           <div id="map" style="width: 100%; height: 100%; min-height: 400px;"></div>
+
+          <!-- Replay HUD Telemetry Overlay (Top Right) -->
+          <div *ngIf="replayActive && replayShowHud" class="replay-hud shadow-lg"
+               (click)="$event.stopPropagation()"
+               (mousedown)="$event.stopPropagation()"
+               (touchstart)="$event.stopPropagation()">
+            <div class="replay-hud-header d-flex align-items-center justify-content-between mb-2">
+              <div class="d-flex align-items-center gap-2">
+                <span class="replay-status-dot" [class.playing]="replayPlaying"></span>
+                <span class="replay-hud-title">FLUGDATEN</span>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary bg-opacity-75 text-white" style="font-size: 10px;">{{ replaySpeed }}x</span>
+                <button class="btn btn-sm btn-link text-white-50 p-0 text-decoration-none" (click)="replayShowHud = false" title="HUD ausblenden" style="line-height: 1;">✕</button>
+              </div>
+            </div>
+
+            <div class="replay-hud-body">
+              <div class="replay-hud-metric">
+                <div class="metric-label"><span>⚡</span> SPEED</div>
+                <div class="metric-val text-info">
+                  {{ currentSpeed | number:'1.1-1' }} <span class="unit">km/h</span>
+                </div>
+              </div>
+              <div class="replay-hud-metric">
+                <div class="metric-label"><span>🏔️</span> HÖHE</div>
+                <div class="metric-val text-warning">
+                  {{ currentAltitude | number:'1.1-1' }} <span class="unit">m</span>
+                </div>
+              </div>
+              <div class="replay-hud-metric">
+                <div class="metric-label"><span>🔋</span> VERBRAUCH</div>
+                <div class="metric-val text-success">
+                  {{ currentCapacity | number:'1.0-0' }} <span class="unit">mAh</span>
+                </div>
+              </div>
+              <div class="replay-hud-metric">
+                <div class="metric-label"><span>⏱️</span> ZEIT</div>
+                <div class="metric-val text-light font-monospace" style="font-size: 13px;">
+                  {{ formatTime(currentDuration) }} <span class="unit text-white-50">/ {{ formatTime(totalDuration) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Show HUD Button if minimized -->
+          <button *ngIf="replayActive && !replayShowHud"
+                  class="btn btn-sm btn-dark position-absolute shadow"
+                  style="top: 12px; right: 12px; z-index: 1100; background: rgba(22, 27, 34, 0.85); border: 1px solid rgba(255,255,255,0.25);"
+                  (click)="replayShowHud = true"
+                  title="HUD einblenden">
+            📊 Flugdaten
+          </button>
+
+          <!-- Replay Bottom Player Bar (Bottom Center) -->
+          <div *ngIf="replayActive" class="replay-bottom-bar shadow-lg"
+               (click)="$event.stopPropagation()"
+               (mousedown)="$event.stopPropagation()"
+               (touchstart)="$event.stopPropagation()">
+            <div class="d-flex align-items-center gap-2 w-100 flex-wrap flex-md-nowrap">
+              <button class="btn btn-sm btn-outline-light border-0 py-1 px-2" (click)="restartReplay()" title="Zum Anfang">
+                ⏮
+              </button>
+              <button class="btn btn-sm text-white py-1 px-2"
+                      [class.btn-warning]="replayPlaying"
+                      [class.btn-success]="!replayPlaying"
+                      (click)="togglePlayPause()"
+                      [title]="replayPlaying ? 'Pause' : 'Abspielen'">
+                {{ replayPlaying ? '⏸' : '▶' }}
+              </button>
+
+              <span class="replay-time text-white text-nowrap font-monospace" style="font-size: 12px;">
+                {{ formatTime(currentDuration) }}
+              </span>
+
+              <input type="range" class="form-range flex-grow-1 mx-1 replay-slider"
+                     min="0" [max]="validRows.length > 0 ? validRows.length - 1 : 0"
+                     [value]="replayCurrentIndex"
+                     (input)="onScrub($event)" />
+
+              <span class="replay-time text-white-50 text-nowrap font-monospace" style="font-size: 12px;">
+                {{ formatTime(totalDuration) }}
+              </span>
+
+              <div class="btn-group btn-group-sm">
+                <button *ngFor="let spd of speeds"
+                        class="btn btn-sm py-0 px-2"
+                        [class.btn-primary]="replaySpeed === spd"
+                        [class.btn-dark]="replaySpeed !== spd"
+                        (click)="setSpeed(spd)">
+                  {{ spd }}x
+                </button>
+              </div>
+
+              <button class="btn btn-sm py-1 px-2"
+                      [class.btn-info]="replayFollowPlane"
+                      [class.btn-dark]="!replayFollowPlane"
+                      (click)="toggleFollowPlane()"
+                      [title]="replayFollowPlane ? 'Kamera folgt Flugzeug' : 'Kamera fixiert'">
+                🎯
+              </button>
+
+              <button class="btn btn-sm btn-outline-danger border-0 py-1 px-2" (click)="stopReplay()" title="Replay beenden">
+                ✕
+              </button>
+            </div>
+          </div>
       </div>
     </div>
   `,
   styles: [`
-    :host {
-      display: flex;
-      flex-direction: column;
-      flex-grow: 1;
-    }
-    ::ng-deep .otx-map-badge-marker,
-    ::ng-deep .measure-badge-icon {
-      background: transparent;
-      border: none;
-    }
-    ::ng-deep .measure-label {
-      background: rgba(255,255,255,0.95);
-      color: #222;
-      border: 1px solid #555;
-      border-radius: 4px;
-      padding: 1px 5px;
-      font-size: 11px;
-      font-weight: 600;
-      white-space: nowrap;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-      pointer-events: none;
+    :host { display: flex; flex-direction: column; flex-grow: 1; }
+    .grid-left-pane { max-height: calc(100vh - 120px); overflow-y: auto; padding-right: 4px; }
+    .btn-xs { padding: 0.15rem 0.35rem; font-size: 0.75rem; }
+
+    /* ── Replay HUD & Player Overlay ── */
+    .replay-hud, .replay-bottom-bar {
+      position: absolute;
+      z-index: 1100;
+      background: rgba(22, 27, 34, 0.93);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #e6edf3;
       user-select: none;
     }
-    ::ng-deep .measure-label-total {
-      background: #1a73e8;
-      color: #fff;
-      border-color: #0d5bbd;
+    .replay-hud {
+      top: 12px;
+      right: 12px;
+      min-width: 210px;
+      border-radius: 8px;
+      padding: 10px 14px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.45);
     }
-    ::ng-deep .measure-dot-marker {
-      background: transparent !important;
-      border: none !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      cursor: move !important;
+    .replay-hud-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #8b949e;
     }
-    ::ng-deep .measure-dot-inner {
-      width: 14px;
-      height: 14px;
-      background: #1a73e8;
-      border: 2px solid #ffffff;
+    .replay-status-dot {
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.45);
-      cursor: move !important;
-      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-      pointer-events: none;
+      background: #ffab00;
+      display: inline-block;
     }
-    ::ng-deep .measure-dot-marker:hover .measure-dot-inner {
-      background: #ea4335;
-      width: 18px;
-      height: 18px;
-      box-shadow: 0 0 0 5px rgba(234, 67, 53, 0.35), 0 3px 8px rgba(0,0,0,0.5);
+    .replay-status-dot.playing {
+      background: #00e676;
+      box-shadow: 0 0 6px #00e676;
     }
-    ::ng-deep .measure-dot-marker.is-dragging .measure-dot-inner {
-      background: #e65100;
-      width: 20px;
-      height: 20px;
-      box-shadow: 0 0 0 6px rgba(230, 81, 0, 0.4), 0 4px 10px rgba(0,0,0,0.6);
+    .replay-hud-body {
+      display: grid;
+      gap: 5px;
     }
-    ::ng-deep .leaflet-drag-target,
-    ::ng-deep .leaflet-dragging .measure-dot-marker,
-    ::ng-deep .leaflet-dragging .measure-dot-marker * {
-      cursor: move !important;
+    .replay-hud-metric {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 2px 0;
+    }
+    .replay-hud-metric:last-child {
+      border-bottom: none;
+    }
+    .metric-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #8b949e;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .metric-val {
+      font-size: 15px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .metric-val .unit {
+      font-size: 11px;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+
+    .replay-bottom-bar {
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 32px);
+      max-width: 680px;
+      border-radius: 30px;
+      padding: 6px 14px;
+      box-shadow: 0 6px 22px rgba(0,0,0,0.55);
+    }
+    .replay-slider {
+      flex: 1 1 0;
+      min-width: 60px;
+      width: auto;
+      cursor: pointer;
+      accent-color: #00d2ff;
     }
   `]
 })
@@ -147,6 +354,27 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
   private measurePreviewLine?: L.Polyline;
   private lastMouseLatLng?: L.LatLng;
   private isDraggingMarker = false;
+
+  // ── Replay state ─────────────────────────────────────────────────────────
+  replayActive = false;
+  replayPlaying = false;
+  replaySpeed = 5;
+  readonly speeds: number[] = [1, 2, 5, 10, 20, 50];
+  replayCurrentIndex = 0;
+  replayCurrentTime = 0;
+  replayFollowPlane = true;
+  replayLoop = false;
+  replayShowHud = true;
+  validRows: LogRow[] = [];
+  validCoords: L.LatLngTuple[] = [];
+  currentBearing = 0;
+
+  private replayLayer: L.LayerGroup = L.layerGroup();
+  private replayBgLine?: L.Polyline;
+  private replayTraveledLine?: L.Polyline;
+  private replayMarker?: L.Marker;
+  private animFrameId?: number;
+  private lastAnimTimestamp = 0;
 
   private readonly onMapClick = (e: L.LeafletMouseEvent) => {
     if (this.isDraggingMarker) return;
@@ -175,6 +403,9 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.logChangeSub = this.data.selectedLogChange.subscribe(() => {
+      if (this.replayActive) {
+        this.stopReplay();
+      }
       this.drawTrack(true);
     });
   }
@@ -185,11 +416,343 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.logChangeSub?.unsubscribe();
+    this.pauseReplay();
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = undefined;
+    }
     this.clearMeasure();
+    this.replayLayer.clearLayers();
     if (this.myMap) {
       this.myMap.remove();
       this.myMap = undefined;
     }
+  }
+
+  // ── Replay Getters & Telemetry ───────────────────────────────────────────
+  get currentRow(): LogRow | undefined {
+    return this.validRows[this.replayCurrentIndex];
+  }
+
+  get currentSpeed(): number {
+    return this.currentRow?.gpsSpeed ?? this.currentRow?.['3dSpeed'] ?? 0;
+  }
+
+  get currentAltitude(): number {
+    return this.currentRow?.altitude ?? 0;
+  }
+
+  get currentCapacity(): number {
+    return this.currentRow?.capacity ?? 0;
+  }
+
+  get currentTimecode(): number {
+    return this.getTimecode(this.replayCurrentIndex);
+  }
+
+  get startTimecode(): number {
+    return this.validRows.length > 0 ? this.getTimecode(0) : 0;
+  }
+
+  get endTimecode(): number {
+    return this.validRows.length > 0 ? this.getTimecode(this.validRows.length - 1) : 0;
+  }
+
+  get currentDuration(): number {
+    return Math.max(0, this.currentTimecode - this.startTimecode);
+  }
+
+  get totalDuration(): number {
+    return Math.max(0, this.endTimecode - this.startTimecode);
+  }
+
+  // ── Replay Controls ──────────────────────────────────────────────────────
+  toggleReplay(): void {
+    if (this.validRows.length === 0) return;
+    if (!this.replayActive) {
+      this.startReplay();
+    } else if (this.replayPlaying) {
+      this.pauseReplay();
+    } else {
+      this.resumeReplay();
+    }
+  }
+
+  startReplay(): void {
+    if (this.validRows.length === 0) return;
+    if (this.measuring) {
+      this.toggleMeasure();
+    }
+    this.replayActive = true;
+    this.trackLayer.clearLayers();
+    if (this.replayCurrentIndex >= this.validRows.length - 1) {
+      this.replayCurrentIndex = 0;
+      this.replayCurrentTime = this.startTimecode;
+    } else {
+      this.replayCurrentTime = this.currentTimecode;
+    }
+    this.initReplayLayers();
+    this.resumeReplay();
+
+    if (this.validCoords.length > 0 && this.myMap && this.replayCurrentIndex === 0) {
+      const bounds = L.latLngBounds(this.validCoords);
+      this.myMap.fitBounds(bounds, { padding: [50, 50] });
+    }
+  }
+
+  stopReplay(): void {
+    this.pauseReplay();
+    this.replayActive = false;
+    this.replayLayer.clearLayers();
+    this.drawTrack(false);
+  }
+
+  togglePlayPause(): void {
+    if (!this.replayActive) {
+      this.startReplay();
+      return;
+    }
+    if (this.replayPlaying) {
+      this.pauseReplay();
+    } else {
+      if (this.replayCurrentIndex >= this.validRows.length - 1) {
+        this.replayCurrentIndex = 0;
+        this.replayCurrentTime = this.startTimecode;
+        this.updateReplayVisuals();
+      }
+      this.resumeReplay();
+    }
+  }
+
+  restartReplay(): void {
+    this.replayCurrentIndex = 0;
+    this.replayCurrentTime = this.startTimecode;
+    this.updateReplayVisuals();
+    if (!this.replayPlaying) {
+      this.resumeReplay();
+    }
+  }
+
+  setSpeed(spd: number): void {
+    this.replaySpeed = spd;
+    this.lastAnimTimestamp = performance.now();
+  }
+
+  toggleFollowPlane(): void {
+    this.replayFollowPlane = !this.replayFollowPlane;
+    if (this.replayFollowPlane && this.currentRow?.lat !== undefined && this.currentRow?.lon !== undefined && this.myMap) {
+      this.myMap.panTo([this.currentRow.lat, this.currentRow.lon], { animate: true, duration: 0.3 });
+    }
+  }
+
+  onScrub(event: any): void {
+    const idx = parseInt(event.target.value, 10);
+    if (isNaN(idx)) return;
+    this.replayCurrentIndex = Math.max(0, Math.min(this.validRows.length - 1, idx));
+    this.replayCurrentTime = this.getTimecode(this.replayCurrentIndex);
+    this.updateReplayVisuals();
+  }
+
+  private startAnimationLoop(): void {
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = undefined;
+    }
+    this.lastAnimTimestamp = performance.now();
+
+    const loop = (now: number) => {
+      if (!this.replayPlaying) return;
+      const dt = (now - this.lastAnimTimestamp) / 1000;
+      this.lastAnimTimestamp = now;
+
+      this.advanceReplay(dt * this.replaySpeed);
+      this.animFrameId = requestAnimationFrame(loop);
+    };
+
+    this.animFrameId = requestAnimationFrame(loop);
+  }
+
+  private pauseReplay(): void {
+    this.replayPlaying = false;
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = undefined;
+    }
+  }
+
+  private resumeReplay(): void {
+    this.replayPlaying = true;
+    this.lastAnimTimestamp = performance.now();
+    this.startAnimationLoop();
+  }
+
+  private advanceReplay(dtSim: number): void {
+    if (this.validRows.length === 0) return;
+    this.replayCurrentTime += dtSim;
+
+    const totalTime = this.endTimecode;
+    if (this.replayCurrentTime >= totalTime) {
+      if (this.replayLoop) {
+        this.replayCurrentIndex = 0;
+        this.replayCurrentTime = this.startTimecode;
+      } else {
+        this.replayCurrentIndex = this.validRows.length - 1;
+        this.replayCurrentTime = totalTime;
+        this.pauseReplay();
+        this.updateReplayVisuals();
+        return;
+      }
+    } else {
+      while (
+        this.replayCurrentIndex < this.validRows.length - 1 &&
+        this.getTimecode(this.replayCurrentIndex + 1) <= this.replayCurrentTime
+      ) {
+        this.replayCurrentIndex++;
+      }
+    }
+
+    this.updateReplayVisuals();
+  }
+
+  private initReplayLayers(): void {
+    this.replayLayer.clearLayers();
+    if (this.validRows.length === 0) return;
+
+    this.validCoords = this.validRows.map(r => [r.lat!, r.lon!]);
+
+    // Background track outline
+    this.replayBgLine = L.polyline(this.validCoords, {
+      color: '#94a3b8',
+      weight: 3,
+      opacity: 0.35,
+      dashArray: '6 4'
+    }).addTo(this.replayLayer);
+
+    // Traveled track
+    const traveled = this.validCoords.slice(0, this.replayCurrentIndex + 1);
+    this.replayTraveledLine = L.polyline(traveled, {
+      color: '#00e5ff',
+      weight: Math.max(5, parseInt(<any>this.strokeWidth)),
+      opacity: 0.95
+    }).addTo(this.replayLayer);
+
+    // Plane marker
+    const curRow = this.validRows[this.replayCurrentIndex];
+    const curLatLng = L.latLng(curRow.lat!, curRow.lon!);
+    const bearing = this.calculateCurrentBearing();
+    this.currentBearing = bearing;
+    this.replayMarker = L.marker(curLatLng, {
+      icon: this.createReplayPlaneIcon(bearing),
+      zIndexOffset: 1000
+    }).addTo(this.replayLayer);
+
+    this.replayMarker.bindTooltip(
+      () => `<b>Speed:</b> ${this.currentSpeed.toFixed(1)} km/h<br/><b>Höhe:</b> ${this.currentAltitude.toFixed(1)} m<br/><b>mAh:</b> ${Math.round(this.currentCapacity)} mAh`,
+      { sticky: true }
+    );
+  }
+
+  private updateReplayVisuals(): void {
+    if (this.validRows.length === 0 || this.replayCurrentIndex >= this.validRows.length) return;
+    const curRow = this.validRows[this.replayCurrentIndex];
+    if (curRow.lat === undefined || curRow.lon === undefined) return;
+
+    const curLatLng = L.latLng(curRow.lat, curRow.lon);
+
+    // Update traveled line
+    if (this.replayTraveledLine) {
+      const traveled = this.validCoords.slice(0, this.replayCurrentIndex + 1);
+      this.replayTraveledLine.setLatLngs(traveled);
+    }
+
+    // Update plane marker position and rotation
+    const bearing = this.calculateCurrentBearing();
+    this.currentBearing = bearing;
+    if (this.replayMarker) {
+      this.replayMarker.setLatLng(curLatLng);
+      const wrapEl = this.replayMarker.getElement()?.querySelector('.replay-plane-wrap') as HTMLElement;
+      if (wrapEl) {
+        wrapEl.style.transform = `rotate(${Math.round(bearing)}deg)`;
+      } else {
+        this.replayMarker.setIcon(this.createReplayPlaneIcon(bearing));
+      }
+    }
+
+    // Follow plane if active
+    if (this.replayFollowPlane && this.myMap) {
+      const bounds = this.myMap.getBounds();
+      const innerBounds = bounds.pad(-0.15);
+      if (!innerBounds.contains(curLatLng)) {
+        this.myMap.panTo(curLatLng, { animate: true, duration: 0.25 });
+      }
+    }
+  }
+
+  private calculateCurrentBearing(): number {
+    if (this.validRows.length < 2) return 0;
+    const row = this.validRows[this.replayCurrentIndex];
+    if (row.heading !== undefined && !isNaN(row.heading)) {
+      return row.heading;
+    }
+    let p1: LogRow;
+    let p2: LogRow;
+    if (this.replayCurrentIndex < this.validRows.length - 1) {
+      p1 = row;
+      p2 = this.validRows[this.replayCurrentIndex + 1];
+    } else {
+      p1 = this.validRows[this.replayCurrentIndex - 1];
+      p2 = row;
+    }
+    if (p1.lat === undefined || p1.lon === undefined || p2.lat === undefined || p2.lon === undefined) {
+      return this.currentBearing;
+    }
+    return this.calculateBearing(p1.lat, p1.lon, p2.lat, p2.lon);
+  }
+
+  private calculateBearing(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    if (Math.abs(lat1 - lat2) < 0.000001 && Math.abs(lon1 - lon2) < 0.000001) {
+      return this.currentBearing;
+    }
+    const toRad = Math.PI / 180;
+    const dLon = (lon2 - lon1) * toRad;
+    const y = Math.sin(dLon) * Math.cos(lat2 * toRad);
+    const x = Math.cos(lat1 * toRad) * Math.sin(lat2 * toRad) -
+              Math.sin(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.cos(dLon);
+    const brng = Math.atan2(y, x) * 180 / Math.PI;
+    return (brng + 360) % 360;
+  }
+
+  private createReplayPlaneIcon(bearing: number): L.DivIcon {
+    return L.divIcon({
+      className: 'replay-plane-marker',
+      html: `
+        <div class="replay-plane-wrap" style="transform: rotate(${Math.round(bearing)}deg);">
+          <div class="replay-plane-ping"></div>
+          <svg class="replay-plane-svg" viewBox="0 0 24 24" width="34" height="34">
+            <path fill="#00e5ff" stroke="#ffffff" stroke-width="1.3" stroke-linejoin="round"
+                  d="M12 2 L14 9 L22 13 L22 15 L14 13.5 L14 19 L16.5 21 L16.5 22.5 L12 21.5 L7.5 22.5 L7.5 21 L10 19 L10 13.5 L2 15 L2 13 L10 9 Z"/>
+          </svg>
+        </div>`,
+      iconSize: [36, 36],
+      iconAnchor: [18, 18]
+    });
+  }
+
+  private getTimecode(index: number): number {
+    if (index < 0 || index >= this.validRows.length) return 0;
+    const row = this.validRows[index];
+    if (row.timecode !== undefined && !isNaN(row.timecode)) {
+      return row.timecode;
+    }
+    return index * 0.1;
+  }
+
+  formatTime(seconds: number): string {
+    if (isNaN(seconds) || seconds < 0) return '00:00';
+    const totalSecs = Math.floor(seconds);
+    const m = Math.floor(totalSecs / 60);
+    const s = totalSecs % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   }
 
   // ── Distance measurement ─────────────────────────────────────────────────
@@ -470,6 +1033,7 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
     L.control.layers(baseMaps).addTo(this.myMap!);
     this.trackLayer.addTo(this.myMap!);
     this.measureLayer.addTo(this.myMap!);
+    this.replayLayer.addTo(this.myMap!);
 
     setTimeout(() => {
       this.myMap?.invalidateSize();
@@ -480,27 +1044,34 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
   drawTrack(setCenter: boolean = false) {
     if (!this.data.selectedLog || !this.myMap) return;
     this.persistence.mapViewPreferences = {selectedStat: this.selectedStat[0].field, strokeWidth: this.strokeWidth};
+
+    this.validRows = this.data.selectedLog.rows.filter(x => x.lat !== undefined && x.lon !== undefined && !isNaN(x.lat) && !isNaN(x.lon));
+    this.validCoords = this.validRows.map(x => [x.lat!, x.lon!]);
+
+    if (this.replayActive) {
+      this.replayCurrentIndex = Math.min(this.replayCurrentIndex, Math.max(0, this.validRows.length - 1));
+      this.initReplayLayers();
+      this.updateReplayVisuals();
+      return;
+    }
+
     this.trackLayer.clearLayers();
-
-    const validRows = this.data.selectedLog.rows.filter(x => x.lat !== undefined && x.lon !== undefined && !isNaN(x.lat) && !isNaN(x.lon));
-    if (validRows.length === 0) return;
-
-    const coords: L.LatLngTuple[] = validRows.map(x => [x.lat!, x.lon!]);
+    if (this.validRows.length === 0) return;
 
     // White background outline for high contrast
-    const bgLine = L.polyline(coords, {
+    const bgLine = L.polyline(this.validCoords, {
       color: '#FFFFFF',
       weight: parseInt(<any>this.strokeWidth) + 2,
       opacity: 0.9
     });
     this.trackLayer.addLayer(bgLine);
 
-    if (setCenter && coords.length > 0) {
-      const bounds = L.latLngBounds(coords);
+    if (setCenter && this.validCoords.length > 0) {
+      const bounds = L.latLngBounds(this.validCoords);
       this.myMap.fitBounds(bounds, { padding: [30, 30] });
     }
 
-    this.drawMulticolorTrack(validRows);
+    this.drawMulticolorTrack(this.validRows);
   }
 
   private drawMulticolorTrack(rows: LogRow[]) {
