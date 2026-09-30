@@ -1,11 +1,11 @@
-import {AfterViewInit, Component, HostListener, OnDestroy, OnInit} from '@angular/core';
-import {PersistenceService} from "../../services/persistence.service";
-import {DataManager} from "../../services/data-manager";
-import {StatTriple} from "../../services/IStats";
-import {LogRow} from "../../services/open-tx-log-parser";
+import { AfterViewInit, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { PersistenceService } from "../../services/persistence.service";
+import { DataManager } from "../../services/data-manager";
+import { StatTriple } from "../../services/IStats";
+import { LogRow } from "../../services/open-tx-log-parser";
 import * as L from 'leaflet';
 import './leaflet-smooth-wheel-zoom';
-import {Subscription} from "rxjs";
+import { Subscription } from "rxjs";
 
 @Component({
   selector: 'otx-map-view',
@@ -397,7 +397,7 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   constructor(private persistence: PersistenceService, public data: DataManager) {
-    const d = persistence.mapViewPreferences ?? {selectedStat: this.stats[0].field, strokeWidth: 14};
+    const d = persistence.mapViewPreferences ?? { selectedStat: this.stats[0].field, strokeWidth: 14 };
     this.strokeWidth = d.strokeWidth!;
     this.selectedStat = [this.stats.find(x => x.field === d.selectedStat) ?? this.stats[0]];
   }
@@ -718,7 +718,7 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
     const dLon = (lon2 - lon1) * toRad;
     const y = Math.sin(dLon) * Math.cos(lat2 * toRad);
     const x = Math.cos(lat1 * toRad) * Math.sin(lat2 * toRad) -
-              Math.sin(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.cos(dLon);
+      Math.sin(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.cos(dLon);
     const brng = Math.atan2(y, x) * 180 / Math.PI;
     return (brng + 360) % 360;
   }
@@ -1019,13 +1019,12 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     this.myMap = L.map('map', {
-      center: [50.1109, 8.6821],
       zoom: 12,
       layers: [osmLayer],
       scrollWheelZoom: false,
       smoothWheelZoom: true,
       smoothSensitivity: 1,
-      zoomSnap: 0
+      zoomSnap: 1
     });
 
     const baseMaps = {
@@ -1048,7 +1047,7 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
   drawTrack(setCenter: boolean = false) {
     if (!this.data.selectedLog || !this.myMap) return;
-    this.persistence.mapViewPreferences = {selectedStat: this.selectedStat[0].field, strokeWidth: this.strokeWidth};
+    this.persistence.mapViewPreferences = { selectedStat: this.selectedStat[0].field, strokeWidth: this.strokeWidth };
 
     this.validRows = this.data.selectedLog.rows.filter(x => x.lat !== undefined && x.lon !== undefined && !isNaN(x.lat) && !isNaN(x.lon));
     this.validCoords = this.validRows.map(x => [x.lat!, x.lon!]);
@@ -1167,9 +1166,9 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
       i += window / 5;
     }
     if (selectedStat.lowIsBetter)
-      data.sort((a,b) => b.value - a.value);
+      data.sort((a, b) => b.value - a.value);
     else
-      data.sort((a,b) => a.value - b.value);
+      data.sort((a, b) => a.value - b.value);
     i = 0;
     while (i < data.length && result.length < pointCount) {
       const candidate = data[i];
@@ -1199,15 +1198,15 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     avg = avg / window;
     if (Math.abs(min - avg) > Math.abs(max - avg))
-      return {value: min, index: minIndex - 1, difference: Math.abs(min - avg)};
+      return { value: min, index: minIndex - 1, difference: Math.abs(min - avg) };
     else
-      return {value: max, index: maxIndex - 1, difference: Math.abs(max - avg)};
+      return { value: max, index: maxIndex - 1, difference: Math.abs(max - avg) };
   }
 
-  private getMultiColor(value:number) {
-    if (isNaN(value)|| !isFinite(value) || value < 0 || value > 1)
+  private getMultiColor(value: number) {
+    if (isNaN(value) || !isFinite(value) || value < 0 || value > 1)
       return "00ff00";
-    const del = 1/3;
+    const del = 1 / 3;
     if (value < del) {
       return this.colorPart(value * 3) + "0000";
     }
@@ -1215,7 +1214,7 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
       const v = (value - del) * 3;
       return "ff" + this.colorPart(v) + "00";
     }
-    const v = Math.round((value - del * 2) * 3 * 255 % 255)/255;
+    const v = Math.round((value - del * 2) * 3 * 255 % 255) / 255;
     return this.colorPart(v) + "ff00";
   }
 
@@ -1241,38 +1240,38 @@ export interface StatDesc {
 }
 
 export const knownStats: StatDesc[] = [
-  {name: "Speed", field: "gpsSpeed", numberFormat: ".1f"},
-  {name: "Altitude", field: "altitude", numberFormat: ".1f"},
-  {name: "Cumulative Ascend", field: "cumulativeAscend", numberFormat: ".0f"},
-  {name: "V Speed m/s", field: "vSpeed", numberFormat: ".1f"},
-  {name: "V Speed m/s (iNav)", field: "vSpeedInav", numberFormat: ".1f"},
-  {name: "3d Speed km/h", field: "3dSpeed", numberFormat: ".1f"},
-  {name: "Pitch Degrees", field: "pitchDeg", numberFormat: ".1f"},
-  {name: "Throttle %", field: "throttle", numberFormat: ".0f"},
-  {name: "Home", field: "distanceToHome", lowIsBetter: true, numberFormat: ".0f"},
-  {name: "Trip", field: "distanceTraveled", numberFormat: ".0f"},
-  {name: "Sats Count", field: "sats"},
-  {name: "Rx Battery", field: "rxBattery", numberFormat: ".1f"},
-  {name: "Current", field: "current", lowIsBetter: true, numberFormat: ".1f"},
-  {name: "Capacity", field: "capacity", lowIsBetter: true, invertOsdBar: true, numberFormat: ".0f"},
-  {name: "Power", field: "power", lowIsBetter: true, numberFormat: ".1f"},
-  {name: "Watt hour per km", field: "wattPerKm", lowIsBetter: true, numberFormat: ".2f"},
-  {name: "Watt hour per 10 km", field: "wattPer10Km", lowIsBetter: true, numberFormat: ".1f"},
-  {name: "Estimated Range", field: "estimatedRange", numberFormat: ".1f"},
-  {name: "Estimated Time", field: "estimatedFlightTime", numberFormat: ".1f"},
-  {name: "RSSI dbm 1", field: "rss1"},
-  {name: "RSSI dbm 2", field: "rss2"},
-  {name: "LQ", field: "rqly"},
-  {name: "LQ CRSF", field: "rqlySum"},
-  {name: "SNR", field: "rsnr"},
-  {name: "Tx Power", field: "tpwr", lowIsBetter: true},
-  {name: "VTX Latency", field: "vtxDelay", lowIsBetter: true, numberFormat: ".0f"},
-  {name: "VTX Bitrate", field: "vtxBitrate", numberFormat: ".1f"},
-  {name: "VTX Distance", field: "vtxDistance", numberFormat: ".0f"},
-  {name: "VTX Sky Battery", field: "vtxSkyBattery", numberFormat: ".1f"},
-  {name: "VTX Goggle Battery", field: "vtxGoggleBattery", numberFormat: ".1f"},
-  {name: "VTX Power", field: "vtxPower", numberFormat: ".0f"},
-  {name: "VTX Ground Power", field: "vtxGroundPower", numberFormat: ".0f"},
-  {name: "DJI Latency", field: "djiDelay", lowIsBetter: true, numberFormat: ".0f"},
-  {name: "DJI Bitrate", field: "djiBitrate", numberFormat: ".1f"},
+  { name: "Speed", field: "gpsSpeed", numberFormat: ".1f" },
+  { name: "Altitude", field: "altitude", numberFormat: ".1f" },
+  { name: "Cumulative Ascend", field: "cumulativeAscend", numberFormat: ".0f" },
+  { name: "V Speed m/s", field: "vSpeed", numberFormat: ".1f" },
+  { name: "V Speed m/s (iNav)", field: "vSpeedInav", numberFormat: ".1f" },
+  { name: "3d Speed km/h", field: "3dSpeed", numberFormat: ".1f" },
+  { name: "Pitch Degrees", field: "pitchDeg", numberFormat: ".1f" },
+  { name: "Throttle %", field: "throttle", numberFormat: ".0f" },
+  { name: "Home", field: "distanceToHome", lowIsBetter: true, numberFormat: ".0f" },
+  { name: "Trip", field: "distanceTraveled", numberFormat: ".0f" },
+  { name: "Sats Count", field: "sats" },
+  { name: "Rx Battery", field: "rxBattery", numberFormat: ".1f" },
+  { name: "Current", field: "current", lowIsBetter: true, numberFormat: ".1f" },
+  { name: "Capacity", field: "capacity", lowIsBetter: true, invertOsdBar: true, numberFormat: ".0f" },
+  { name: "Power", field: "power", lowIsBetter: true, numberFormat: ".1f" },
+  { name: "Watt hour per km", field: "wattPerKm", lowIsBetter: true, numberFormat: ".2f" },
+  { name: "Watt hour per 10 km", field: "wattPer10Km", lowIsBetter: true, numberFormat: ".1f" },
+  { name: "Estimated Range", field: "estimatedRange", numberFormat: ".1f" },
+  { name: "Estimated Time", field: "estimatedFlightTime", numberFormat: ".1f" },
+  { name: "RSSI dbm 1", field: "rss1" },
+  { name: "RSSI dbm 2", field: "rss2" },
+  { name: "LQ", field: "rqly" },
+  { name: "LQ CRSF", field: "rqlySum" },
+  { name: "SNR", field: "rsnr" },
+  { name: "Tx Power", field: "tpwr", lowIsBetter: true },
+  { name: "VTX Latency", field: "vtxDelay", lowIsBetter: true, numberFormat: ".0f" },
+  { name: "VTX Bitrate", field: "vtxBitrate", numberFormat: ".1f" },
+  { name: "VTX Distance", field: "vtxDistance", numberFormat: ".0f" },
+  { name: "VTX Sky Battery", field: "vtxSkyBattery", numberFormat: ".1f" },
+  { name: "VTX Goggle Battery", field: "vtxGoggleBattery", numberFormat: ".1f" },
+  { name: "VTX Power", field: "vtxPower", numberFormat: ".0f" },
+  { name: "VTX Ground Power", field: "vtxGroundPower", numberFormat: ".0f" },
+  { name: "DJI Latency", field: "djiDelay", lowIsBetter: true, numberFormat: ".0f" },
+  { name: "DJI Bitrate", field: "djiBitrate", numberFormat: ".1f" },
 ];
