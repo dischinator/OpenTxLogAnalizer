@@ -190,7 +190,8 @@ import { Subscription } from "rxjs";
           <div *ngIf="replayActive" class="replay-bottom-bar shadow-lg"
                (click)="$event.stopPropagation()"
                (mousedown)="$event.stopPropagation()"
-               (touchstart)="$event.stopPropagation()">
+               (touchstart)="$event.stopPropagation()"
+               (wheel)="$event.stopPropagation()">
             <div class="d-flex align-items-center gap-2 w-100 flex-wrap flex-md-nowrap">
               <button class="btn btn-sm btn-outline-light border-0 py-1 px-2" (click)="restartReplay()" title="Zum Anfang">
                 ⏮
@@ -249,7 +250,6 @@ import { Subscription } from "rxjs";
 
     /* ── Replay HUD & Player Overlay ── */
     .replay-hud, .replay-bottom-bar {
-      position: absolute;
       z-index: 1100;
       background: rgba(22, 27, 34, 0.93);
       backdrop-filter: blur(8px);
@@ -259,6 +259,7 @@ import { Subscription } from "rxjs";
       user-select: none;
     }
     .replay-hud {
+      position: absolute;
       top: 12px;
       right: 12px;
       min-width: 210px;
@@ -317,14 +318,24 @@ import { Subscription } from "rxjs";
     }
 
     .replay-bottom-bar {
+      position: fixed;
       bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: calc(100% - 32px);
+      left: 220px;
+      right: 16px;
+      width: calc(100% - 240px);
       max-width: 680px;
+      margin: 0 auto;
       border-radius: 30px;
       padding: 6px 14px;
       box-shadow: 0 6px 22px rgba(0,0,0,0.55);
+    }
+    @media (max-width: 768px) {
+      .replay-bottom-bar {
+        left: 16px;
+        right: 16px;
+        width: calc(100% - 32px);
+        bottom: 12px;
+      }
     }
     .replay-slider {
       flex: 1 1 0;
