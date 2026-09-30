@@ -126,6 +126,11 @@ export class ChartsViewComponent implements OnInit {
   xAxisTypes: xAxisType[] = [
     { name: "Index", field: "index" },
     { name: "Time, s", field: "timecode" },
+    {
+      name: "Time, m",
+      field: "timecode",
+      getValue: (row: ILogRow) => (row.timecode !== undefined && !isNaN(row.timecode)) ? row.timecode / 60 : 0
+    },
     { name: "Trip distance, m", field: "distanceTraveled" },
     { name: "Home distance, m", field: "distanceToHome" },
   ];
@@ -296,7 +301,7 @@ export class ChartsViewComponent implements OnInit {
           return {
             seriesName: f.name,
             index: x.index,
-            name: x[this.selectedXAxisType.field],
+            name: this.getXAxisValue(x),
             value: val,
             rawValue: raw,
             processedValue: processed,
@@ -314,6 +319,13 @@ export class ChartsViewComponent implements OnInit {
     this.results = <any>data;
   }
 
+  getXAxisValue(row: ILogRow): any {
+    if (this.selectedXAxisType.getValue) {
+      return this.selectedXAxisType.getValue(row);
+    }
+    return row[this.selectedXAxisType.field];
+  }
+
   onSelect($event: any) {
     if (!this.data.currentLogProject) return;
     this.data.currentLogProject.startRow = $event.index - 1;
@@ -323,4 +335,5 @@ export class ChartsViewComponent implements OnInit {
 interface xAxisType {
   name: string;
   field: keyof ILogRow;
+  getValue?: (row: ILogRow) => number;
 }
