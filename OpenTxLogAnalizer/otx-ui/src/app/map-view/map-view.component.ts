@@ -174,6 +174,17 @@ import { Subscription } from "rxjs";
                   {{ formatTime(currentDuration) }} <span class="unit text-white-50">/ {{ formatTime(totalDuration) }}</span>
                 </div>
               </div>
+              <!-- Extra stats from "Value to draw" selection -->
+              <ng-container *ngFor="let s of extraHudStats">
+                <ng-container *ngIf="getExtraStatValue(s) !== undefined">
+                  <div class="replay-hud-metric">
+                    <div class="metric-label"><span>📊</span> {{ s.name | uppercase }}</div>
+                    <div class="metric-val text-light">
+                      {{ formatStatValue(s, getExtraStatValue(s)!) }}
+                    </div>
+                  </div>
+                </ng-container>
+              </ng-container>
             </div>
           </div>
 
@@ -442,6 +453,9 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // ── Replay Getters & Telemetry ───────────────────────────────────────────
+  /** Fields already shown as default HUD rows – skip these from extras */
+  private readonly defaultHudFields = new Set(['gpsSpeed', '3dSpeed', 'altitude', 'capacity']);
+
   get currentRow(): LogRow | undefined {
     return this.validRows[this.replayCurrentIndex];
   }
@@ -456,6 +470,23 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
   get currentCapacity(): number {
     return this.currentRow?.capacity ?? 0;
+  }
+
+  /** Selected stats that are NOT already shown as default HUD rows */
+  get extraHudStats(): StatDesc[] {
+    return this.selectedStat.filter(s => !this.defaultHudFields.has(s.field));
+  }
+
+  getExtraStatValue(stat: StatDesc): number | undefined {
+    const v = (this.currentRow as any)?.[stat.field];
+    return v !== undefined && !isNaN(v) ? v : undefined;
+  }
+
+  formatStatValue(stat: StatDesc, value: number): string {
+    const fmt = stat.numberFormat;
+    if (!fmt) return String(value);
+    const decimals = parseInt((fmt.match(/\.?(\d+)/) ?? [])[1] ?? '0', 10);
+    return value.toFixed(decimals);
   }
 
   get currentTimecode(): number {
@@ -659,7 +690,16 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
     }).addTo(this.replayLayer);
 
     this.replayMarker.bindTooltip(
-      () => `<b>Speed:</b> ${this.currentSpeed.toFixed(1)} km/h<br/><b>Höhe:</b> ${this.currentAltitude.toFixed(1)} m<br/><b>mAh:</b> ${Math.round(this.currentCapacity)} mAh`,
+      () => {
+        let tip = `<b>Speed:</b> ${this.currentSpeed.toFixed(1)} km/h<br/><b>Höhe:</b> ${this.currentAltitude.toFixed(1)} m<br/><b>mAh:</b> ${Math.round(this.currentCapacity)} mAh`;
+        for (const s of this.extraHudStats) {
+          const v = this.getExtraStatValue(s);
+          if (v !== undefined) {
+            tip += `<br/><b>${s.name}:</b> ${this.formatStatValue(s, v)}`;
+          }
+        }
+        return tip;
+      },
       { sticky: true }
     );
   }
