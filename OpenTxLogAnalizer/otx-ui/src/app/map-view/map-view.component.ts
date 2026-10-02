@@ -57,48 +57,11 @@ import { Subscription } from "rxjs";
               ⏹ Replay beenden
             </button>
 
-            <div class="mb-2">
-              <label class="form-label mb-1 text-muted" style="font-size: 11px;">Geschwindigkeit:</label>
-              <div class="btn-group btn-group-sm w-100">
-                <button *ngFor="let spd of speeds"
-                        class="btn btn-xs py-0 px-1"
-                        [class.btn-primary]="replaySpeed === spd"
-                        [class.btn-outline-secondary]="replaySpeed !== spd"
-                        (click)="setSpeed(spd)">
-                  {{ spd }}x
-                </button>
-              </div>
-            </div>
-
-            <div class="form-check form-switch mb-1">
-              <input class="form-check-input" type="checkbox" id="followPlaneCheck" [(ngModel)]="replayFollowPlane">
-              <label class="form-check-label small" for="followPlaneCheck">Flugzeug folgen</label>
-            </div>
-
             <div class="form-check form-switch mb-2">
               <input class="form-check-input" type="checkbox" id="loopCheck" [(ngModel)]="replayLoop">
               <label class="form-check-label small" for="loopCheck">Endlosschleife</label>
             </div>
 
-            <!-- Live Telemetry Card -->
-            <div class="p-2 bg-white rounded border small">
-              <div class="d-flex justify-content-between mb-1">
-                <span class="text-muted">Speed:</span>
-                <strong class="text-primary">{{ currentSpeed | number:'1.1-1' }} km/h</strong>
-              </div>
-              <div class="d-flex justify-content-between mb-1">
-                <span class="text-muted">Höhe:</span>
-                <strong class="text-warning text-darken">{{ currentAltitude | number:'1.1-1' }} m</strong>
-              </div>
-              <div class="d-flex justify-content-between mb-1">
-                <span class="text-muted">Kapazität:</span>
-                <strong class="text-success">{{ currentCapacity | number:'1.0-0' }} mAh</strong>
-              </div>
-              <div class="d-flex justify-content-between">
-                <span class="text-muted">Zeit:</span>
-                <span class="font-monospace text-muted">{{ formatTime(currentDuration) }} / {{ formatTime(totalDuration) }}</span>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -258,96 +221,6 @@ import { Subscription } from "rxjs";
     :host { display: flex; flex-direction: column; flex-grow: 1; }
     .grid-left-pane { max-height: calc(100vh - 120px); overflow-y: auto; padding-right: 4px; }
     .btn-xs { padding: 0.15rem 0.35rem; font-size: 0.75rem; }
-
-    /* ── Replay HUD & Player Overlay ── */
-    .replay-hud, .replay-bottom-bar {
-      z-index: 1100;
-      background: rgba(22, 27, 34, 0.93);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      color: #e6edf3;
-      user-select: none;
-    }
-    .replay-hud {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      min-width: 210px;
-      border-radius: 8px;
-      padding: 10px 14px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.45);
-    }
-    .replay-hud-title {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      color: #8b949e;
-    }
-    .replay-status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #ffab00;
-      display: inline-block;
-    }
-    .replay-status-dot.playing {
-      background: #00e676;
-      box-shadow: 0 0 6px #00e676;
-    }
-    .replay-hud-body {
-      display: grid;
-      gap: 5px;
-    }
-    .replay-hud-metric {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      padding: 2px 0;
-    }
-    .replay-hud-metric:last-child {
-      border-bottom: none;
-    }
-    .metric-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: #8b949e;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .metric-val {
-      font-size: 15px;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-    .metric-val .unit {
-      font-size: 11px;
-      font-weight: 500;
-      opacity: 0.8;
-    }
-
-    .replay-bottom-bar {
-      position: fixed;
-      bottom: 16px;
-      left: 220px;
-      right: 16px;
-      width: calc(100% - 240px);
-      max-width: 680px;
-      margin: 0 auto;
-      border-radius: 30px;
-      padding: 6px 14px;
-      box-shadow: 0 6px 22px rgba(0,0,0,0.55);
-    }
-    @media (max-width: 768px) {
-      .replay-bottom-bar {
-        left: 16px;
-        right: 16px;
-        width: calc(100% - 32px);
-        bottom: 12px;
-      }
-    }
     .replay-slider {
       flex: 1 1 0;
       min-width: 60px;
