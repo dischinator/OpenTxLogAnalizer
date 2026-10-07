@@ -48,10 +48,34 @@ export class OpenTxLogParser {
       typedRow.pitchDeg = Math.round( parseFloat(row["Ptch(rad)"]??row["Ptch(@)"]) * 180 / Math.PI);
       typedRow.rollDeg = Math.round(parseFloat(row["Roll(rad)"]??row["Roll(@)"]) * 180 / Math.PI);
       typedRow.yawDeg = Math.round(parseFloat(row["Yaw(rad)"]??row["Yaw(@)"]) * 180 / Math.PI);
-      typedRow.aileron = Math.round((parseFloat(row["Ail"]) + 1024) * 100 / 2048);
-      typedRow.throttle = Math.round((parseFloat(row["Thr"]) + 1024) * 100 / 2048);
-      typedRow.rudder = Math.round((parseFloat(row["Rud"]) + 1024) * 100 / 2048);
-      typedRow.elevator = Math.round((parseFloat(row["Ele"]) + 1024) * 100 / 2048);
+      if (row["Ail"] !== undefined) {
+        typedRow.aileron = Math.round((parseFloat(row["Ail"]) + 1024) * 100 / 2048);
+      } else if (row["CH1(us)"] !== undefined || row["CH1"] !== undefined) {
+        typedRow.aileron = Math.round((parseFloat(row["CH1(us)"] ?? row["CH1"]) - 1000) * 100 / 1000);
+      }
+      if (row["Thr"] !== undefined) {
+        typedRow.throttle = Math.round((parseFloat(row["Thr"]) + 1024) * 100 / 2048);
+      } else if (row["CH3(us)"] !== undefined || row["CH3"] !== undefined) {
+        typedRow.throttle = Math.round((parseFloat(row["CH3(us)"] ?? row["CH3"]) - 1000) * 100 / 1000);
+      }
+      if (row["Rud"] !== undefined) {
+        typedRow.rudder = Math.round((parseFloat(row["Rud"]) + 1024) * 100 / 2048);
+      } else if (row["CH4(us)"] !== undefined || row["CH4"] !== undefined) {
+        typedRow.rudder = Math.round((parseFloat(row["CH4(us)"] ?? row["CH4"]) - 1000) * 100 / 1000);
+      }
+      if (row["Ele"] !== undefined) {
+        typedRow.elevator = Math.round((parseFloat(row["Ele"]) + 1024) * 100 / 2048);
+      } else if (row["CH2(us)"] !== undefined || row["CH2"] !== undefined) {
+        typedRow.elevator = Math.round((parseFloat(row["CH2(us)"] ?? row["CH2"]) - 1000) * 100 / 1000);
+      }
+      if (row["SA"] !== undefined) typedRow.SA = parseFloat(row["SA"]);
+      if (row["SB"] !== undefined) typedRow.SB = parseFloat(row["SB"]);
+      if (row["SC"] !== undefined) typedRow.SC = parseFloat(row["SC"]);
+      if (row["SD"] !== undefined) typedRow.SD = parseFloat(row["SD"]);
+      if (row["SE"] !== undefined) typedRow.SE = parseFloat(row["SE"]);
+      if (row["SF"] !== undefined) typedRow.SF = parseFloat(row["SF"]);
+      if (row["SG"] !== undefined) typedRow.SG = parseFloat(row["SG"]);
+      if (row["SH"] !== undefined) typedRow.SH = parseFloat(row["SH"]);
       typedRow.sats = parseInt(row["Sats"]);
       typedRow.altitude = Math.round(parseFloat(row["Alt(m)"]??row["GAlt"]??row["GAlt(m)"])*10)/10;
       typedRow.vSpeedInav = Math.round(parseFloat(row["VSpd(m/s)"]??0)*10)/10;
@@ -197,6 +221,8 @@ const csvFieldMap = [
   {title:"SD", field: "SD"},
   {title:"SE", field: "SE"},
   {title:"SF", field: "SF"},
+  {title:"SG", field: "SG"},
+  {title:"SH", field: "SH"},
   {title:"LSW", field: "LSW"},
   {title:"TxBat(V)", field: "txBattery"},
   {title:"VtxDelay", field: "vtxDelay"},
@@ -439,6 +465,8 @@ export interface ILogRow {
   SD?: number;
   SE?: number;
   SF?: number;
+  SG?: number;
+  SH?: number;
   djiSignal?: number;
   djiChannel?: number;
   djiDelay?: number;
@@ -545,6 +573,8 @@ export class LogRow implements ILogRow {
   SD?: number;
   SE?: number;
   SF?: number;
+  SG?: number;
+  SH?: number;
   djiSignal?: number;
   djiChannel?: number;
   djiDelay?: number;

@@ -166,6 +166,202 @@ div.osd-preview {
   accent-color: #00d2ff;
 }
 
+/* ── Stick & Switch Monitor Overlay ── */
+.replay-stick-monitor {
+  position: absolute;
+  z-index: 1120;
+  background: rgba(22, 27, 34, 0.93);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+  color: #e6edf3;
+  user-select: none;
+  min-width: 250px;
+}
+
+.replay-stick-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  cursor: grab;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.replay-stick-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #8b949e;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-close-monitor {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 0 4px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    color: #ff5252;
+  }
+}
+
+.sticks-container {
+  display: flex;
+  justify-content: space-around;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.stick-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stick-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #8b949e;
+  margin-bottom: 4px;
+}
+
+.stick-pad {
+  position: relative;
+  width: 86px;
+  height: 86px;
+  background: rgba(13, 17, 23, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6);
+}
+
+.stick-crosshair-h {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  border-top: 1px dashed rgba(255, 255, 255, 0.2);
+}
+
+.stick-crosshair-v {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  border-left: 1px dashed rgba(255, 255, 255, 0.2);
+}
+
+.stick-thumb {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #00e5ff;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 8px #00e5ff, 0 2px 4px rgba(0, 0, 0, 0.5);
+  transform: translate(-50%, -50%);
+  transition: left 0.05s linear, top 0.05s linear;
+  pointer-events: none;
+}
+
+.stick-value-text {
+  font-size: 10px;
+  font-family: monospace;
+  color: #c9d1d9;
+  margin-top: 3px;
+}
+
+.switches-container {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.switch-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(13, 17, 23, 0.6);
+  padding: 3px 5px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  min-width: 25px;
+
+  &.switch-item-disabled {
+    opacity: 0.3;
+  }
+}
+
+.switch-id {
+  font-size: 9px;
+  font-weight: 700;
+  color: #8b949e;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+.switch-track {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+}
+
+.switch-pos {
+  width: 6px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+
+  &.active-up {
+    background: #00e676;
+    box-shadow: 0 0 4px #00e676;
+  }
+  &.active-mid {
+    background: #ffab00;
+    box-shadow: 0 0 4px #ffab00;
+  }
+  &.active-down {
+    background: #00b0ff;
+    box-shadow: 0 0 4px #00b0ff;
+  }
+}
+
+.switch-state-text {
+  font-size: 8px;
+  font-family: monospace;
+  font-weight: 600;
+  margin-top: 2px;
+  color: #8b949e;
+
+  &.text-up { color: #00e676; }
+  &.text-mid { color: #ffab00; }
+  &.text-down { color: #00b0ff; }
+}
+
 /* ── Leaflet Plane & Measurement Markers ── */
 .replay-plane-marker,
 .otx-map-badge-marker,

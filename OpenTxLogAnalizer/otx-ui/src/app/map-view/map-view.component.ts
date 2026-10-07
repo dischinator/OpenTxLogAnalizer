@@ -34,32 +34,25 @@ import { Subscription } from "rxjs";
 
         <!-- ── Replay Section (Left Pane) ─────────────────────────────────── -->
         <div class="mb-3 border rounded p-2 bg-light">
-          <div class="d-flex justify-content-between align-items-center mb-1">
-            <strong style="font-size: 13px;">✈ Flug Replay</strong>
-            <span *ngIf="replayActive" class="badge" [class.bg-success]="replayPlaying" [class.bg-warning]="!replayPlaying">
-              {{ replayPlaying ? 'Spielt' : 'Pausiert' }}
-            </span>
-          </div>
-
           <button class="btn btn-sm w-100 mb-2"
                   [class.btn-success]="!replayActive"
                   [class.btn-warning]="replayActive && replayPlaying"
                   [class.btn-primary]="replayActive && !replayPlaying"
                   [disabled]="validRows.length === 0"
                   (click)="toggleReplay()">
-            <span *ngIf="!replayActive">▶ Flug simulieren</span>
+            <span *ngIf="!replayActive">▶ Play flight</span>
             <span *ngIf="replayActive && replayPlaying">⏸ Pause</span>
-            <span *ngIf="replayActive && !replayPlaying">▶ Fortsetzen</span>
+            <span *ngIf="replayActive && !replayPlaying">▶ Continue</span>
           </button>
 
           <div *ngIf="replayActive">
             <button class="btn btn-sm btn-outline-danger w-100 mb-2" (click)="stopReplay()">
-              ⏹ Replay beenden
+              ⏹ Stop Replay
             </button>
 
             <div class="form-check form-switch mb-2">
               <input class="form-check-input" type="checkbox" id="loopCheck" [(ngModel)]="replayLoop">
-              <label class="form-check-label small" for="loopCheck">Endlosschleife</label>
+              <label class="form-check-label small" for="loopCheck">Loop</label>
             </div>
 
           </div>
@@ -104,7 +97,7 @@ import { Subscription } from "rxjs";
             <div class="replay-hud-header d-flex align-items-center justify-content-between mb-2">
               <div class="d-flex align-items-center gap-2">
                 <span class="replay-status-dot" [class.playing]="replayPlaying"></span>
-                <span class="replay-hud-title">FLUGDATEN</span>
+                <span class="replay-hud-title">TELEMETRY</span>
               </div>
               <div class="d-flex align-items-center gap-2">
                 <span class="badge bg-primary bg-opacity-75 text-white" style="font-size: 10px;">{{ replaySpeed }}x</span>
@@ -120,19 +113,19 @@ import { Subscription } from "rxjs";
                 </div>
               </div>
               <div class="replay-hud-metric">
-                <div class="metric-label"><span>🏔️</span> HÖHE</div>
+                <div class="metric-label"><span>🏔️</span> ALT</div>
                 <div class="metric-val text-warning">
                   {{ currentAltitude | number:'1.1-1' }} <span class="unit">m</span>
                 </div>
               </div>
               <div class="replay-hud-metric">
-                <div class="metric-label"><span>🔋</span> VERBRAUCH</div>
+                <div class="metric-label"><span>🔋</span> mAh</div>
                 <div class="metric-val text-success">
                   {{ currentCapacity | number:'1.0-0' }} <span class="unit">mAh</span>
                 </div>
               </div>
               <div class="replay-hud-metric">
-                <div class="metric-label"><span>⏱️</span> ZEIT</div>
+                <div class="metric-label"><span>⏱️</span> TIME</div>
                 <div class="metric-val text-light font-monospace" style="font-size: 13px;">
                   {{ formatTime(currentDuration) }} <span class="unit text-white-50">/ {{ formatTime(totalDuration) }}</span>
                 </div>
@@ -157,8 +150,76 @@ import { Subscription } from "rxjs";
                   style="top: 12px; right: 12px; z-index: 1100; background: rgba(22, 27, 34, 0.85); border: 1px solid rgba(255,255,255,0.25);"
                   (click)="replayShowHud = true"
                   title="HUD einblenden">
-            📊 Flugdaten
+            📊 Telemetry
           </button>
+
+          <!-- Replay Stick & Switch Monitor Overlay (Draggable) -->
+          <div *ngIf="replayActive && stickMonitorVisible" class="replay-stick-monitor shadow-lg"
+               [ngStyle]="{ 'top.px': stickMonitorPos.y, 'left.px': stickMonitorPos.x }"
+               (click)="$event.stopPropagation()"
+               (mousedown)="$event.stopPropagation()"
+               (touchstart)="$event.stopPropagation()">
+            <div class="replay-stick-header" (mousedown)="startMonitorDrag($event)">
+              <div class="replay-stick-title">
+                <span>🕹️</span>
+                <span>STICKS & SCHALTER</span>
+              </div>
+              <button class="btn-close-monitor" (click)="stickMonitorVisible = false" title="Close stick monitor">✕</button>
+            </div>
+
+            <!-- 2 Sticks (Mode 2: Left = Throttle / Rudder, Right = Elevator / Aileron) -->
+            <div class="sticks-container">
+              <!-- Left Stick: Thr (Y) / Rud (X) -->
+              <div class="stick-box">
+                <div class="stick-label">THR / RUD</div>
+                <div class="stick-pad">
+                  <div class="stick-crosshair-h"></div>
+                  <div class="stick-crosshair-v"></div>
+                  <div class="stick-thumb"
+                       [style.left.%]="getStickValue('rudder')"
+                       [style.top.%]="100 - getStickValue('throttle')"></div>
+                </div>
+                <div class="stick-value-text">
+                  T:{{ getStickValue('throttle') | number:'1.0-0' }}% R:{{ getStickValue('rudder') | number:'1.0-0' }}%
+                </div>
+              </div>
+
+              <!-- Right Stick: Ele (Y) / Ail (X) -->
+              <div class="stick-box">
+                <div class="stick-label">ELE / AIL</div>
+                <div class="stick-pad">
+                  <div class="stick-crosshair-h"></div>
+                  <div class="stick-crosshair-v"></div>
+                  <div class="stick-thumb"
+                       [style.left.%]="getStickValue('aileron')"
+                       [style.top.%]="100 - getStickValue('elevator')"></div>
+                </div>
+                <div class="stick-value-text">
+                  E:{{ getStickValue('elevator') | number:'1.0-0' }}% A:{{ getStickValue('aileron') | number:'1.0-0' }}%
+                </div>
+              </div>
+            </div>
+
+            <!-- Switches SA .. SH -->
+            <div class="switches-container">
+              <div *ngFor="let sw of switchKeys"
+                   class="switch-item"
+                   [class.switch-item-disabled]="!hasSwitchData(sw)">
+                <div class="switch-id">{{ sw }}</div>
+                <div class="switch-track">
+                  <div class="switch-pos" [class.active-up]="getSwitchState(sw) === -1" title="Oben (UP)"></div>
+                  <div class="switch-pos" [class.active-mid]="getSwitchState(sw) === 0" title="Mitte (MID)"></div>
+                  <div class="switch-pos" [class.active-down]="getSwitchState(sw) === 1" title="Unten (DN)"></div>
+                </div>
+                <div class="switch-state-text"
+                     [class.text-up]="getSwitchState(sw) === -1"
+                     [class.text-mid]="getSwitchState(sw) === 0"
+                     [class.text-down]="getSwitchState(sw) === 1">
+                  {{ getSwitchText(sw) }}
+                </div>
+              </div>
+            </div>
+          </div>
 
           <!-- Replay Bottom Player Bar (Bottom Center) -->
           <div *ngIf="replayActive" class="replay-bottom-bar shadow-lg"
@@ -209,7 +270,15 @@ import { Subscription } from "rxjs";
                 🎯
               </button>
 
-              <button class="btn btn-sm btn-outline-danger border-0 py-1 px-2" (click)="stopReplay()" title="Replay beenden">
+              <button class="btn btn-sm py-1 px-2"
+                      [class.btn-success]="stickMonitorVisible"
+                      [class.btn-dark]="!stickMonitorVisible"
+                      (click)="toggleStickMonitor()"
+                      [title]="stickMonitorVisible ? 'Stick Monitor ausblenden' : 'Stick Monitor einblenden'">
+                🕹️
+              </button>
+
+              <button class="btn btn-sm btn-outline-danger border-0 py-1 px-2" (click)="stopReplay()" title="Stop replay">
                 ✕
               </button>
             </div>
@@ -283,6 +352,33 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
       this.toggleMeasure();
     }
   }
+
+  @HostListener('window:mousemove', ['$event'])
+  onWindowMouseMove(event: MouseEvent): void {
+    if (this.isDraggingMonitor) {
+      const dx = event.clientX - this.dragStartMouse.x;
+      const dy = event.clientY - this.dragStartMouse.y;
+      this.stickMonitorPos = {
+        x: Math.max(5, this.dragStartPos.x + dx),
+        y: Math.max(5, this.dragStartPos.y + dy)
+      };
+    }
+  }
+
+  @HostListener('window:mouseup')
+  onWindowMouseUp(): void {
+    if (this.isDraggingMonitor) {
+      this.isDraggingMonitor = false;
+    }
+  }
+
+  // ── Stick & Switch Monitor state ─────────────────────────────────────────
+  stickMonitorVisible = false;
+  stickMonitorPos = { x: 20, y: 70 };
+  private isDraggingMonitor = false;
+  private dragStartMouse = { x: 0, y: 0 };
+  private dragStartPos = { x: 0, y: 0 };
+  readonly switchKeys: string[] = ['SA', 'SB', 'SC', 'SD', 'SE', 'SF', 'SG', 'SH'];
 
   constructor(private persistence: PersistenceService, public data: DataManager) {
     const d = persistence.mapViewPreferences ?? { selectedStat: this.stats[0].field, strokeWidth: 14 };
@@ -412,8 +508,53 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
   stopReplay(): void {
     this.pauseReplay();
     this.replayActive = false;
+    this.stickMonitorVisible = false;
     this.replayLayer.clearLayers();
     this.drawTrack(false);
+  }
+
+  toggleStickMonitor(): void {
+    this.stickMonitorVisible = !this.stickMonitorVisible;
+  }
+
+  startMonitorDrag(e: MouseEvent): void {
+    if ((e.target as HTMLElement).closest('.btn-close-monitor')) return;
+    e.preventDefault();
+    this.isDraggingMonitor = true;
+    this.dragStartMouse = { x: e.clientX, y: e.clientY };
+    this.dragStartPos = { ...this.stickMonitorPos };
+  }
+
+  getStickValue(axis: 'aileron' | 'elevator' | 'throttle' | 'rudder'): number {
+    const row = this.currentRow;
+    if (!row) return axis === 'throttle' ? 0 : 50;
+    const val = row[axis];
+    if (val === undefined || isNaN(val)) return axis === 'throttle' ? 0 : 50;
+    return Math.max(0, Math.min(100, val));
+  }
+
+  hasSwitchData(sw: string): boolean {
+    const curVal = (this.currentRow as any)?.[sw];
+    if (curVal !== undefined && !isNaN(Number(curVal))) return true;
+    const firstVal = (this.validRows[0] as any)?.[sw];
+    return firstVal !== undefined && !isNaN(Number(firstVal));
+  }
+
+  getSwitchState(sw: string): number | undefined {
+    const v = (this.currentRow as any)?.[sw];
+    if (v === undefined || isNaN(Number(v))) return undefined;
+    const num = Number(v);
+    if (num <= -0.5) return -1;
+    if (num >= 0.5) return 1;
+    return 0;
+  }
+
+  getSwitchText(sw: string): string {
+    const s = this.getSwitchState(sw);
+    if (s === -1) return 'UP';
+    if (s === 0) return 'MID';
+    if (s === 1) return 'DN';
+    return '-';
   }
 
   togglePlayPause(): void {
