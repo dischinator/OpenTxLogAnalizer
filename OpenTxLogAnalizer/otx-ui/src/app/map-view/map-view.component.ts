@@ -65,22 +65,22 @@ import { Subscription } from "rxjs";
                     [class.btn-warning]="measuring"
                     [class.btn-outline-primary]="!measuring"
                     (click)="toggleMeasure()">
-              <span *ngIf="!measuring && measurePoints.length === 0">📏 Entfernung messen</span>
-              <span *ngIf="!measuring && measurePoints.length > 0">📏 Weiter messen</span>
-              <span *ngIf="measuring">✔ Messmodus beenden <small class="opacity-75">(ESC)</small></span>
+              <span *ngIf="!measuring && measurePoints.length === 0">📏 Measure distance</span>
+              <span *ngIf="!measuring && measurePoints.length > 0">📏 Continue measuring</span>
+              <span *ngIf="measuring">✔ Exit measure mode <small class="opacity-75">(ESC)</small></span>
             </button>
             <button *ngIf="measurePoints.length > 0"
                     class="btn btn-sm btn-outline-danger"
                     (click)="clearMeasure()"
-                    title="Messung löschen">
+                    title="Clear measurement">
               ✕
             </button>
           </div>
           <div *ngIf="measurePoints.length > 0" class="mt-1 text-muted text-center" style="font-size: 11px;">
-            Punkte verschiebbar &bull; Rechtsklick löscht Punkt
+            Drag points to adjust &bull; Right-click to delete
           </div>
           <div *ngIf="measureTotal > 0" class="mt-1 text-center small">
-            <strong>Gesamt: {{ formatDist(measureTotal) }}</strong>
+            <strong>Total: {{ formatDist(measureTotal) }}</strong>
           </div>
         </div>
       </div>
@@ -866,7 +866,7 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
     const marker = L.marker(pt, {
       icon: dot,
       draggable: true,
-      title: 'Ziehen zum Feinjustieren, Rechtsklick zum Löschen'
+      title: 'Drag to adjust, right-click to delete'
     });
 
     marker.on('dragstart', () => {
