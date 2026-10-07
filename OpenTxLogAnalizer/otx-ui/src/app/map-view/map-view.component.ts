@@ -221,13 +221,6 @@ import { Subscription } from "rxjs";
     :host { display: flex; flex-direction: column; flex-grow: 1; }
     .grid-left-pane { max-height: calc(100vh - 120px); overflow-y: auto; padding-right: 4px; }
     .btn-xs { padding: 0.15rem 0.35rem; font-size: 0.75rem; }
-    .replay-slider {
-      flex: 1 1 0;
-      min-width: 60px;
-      width: auto;
-      cursor: pointer;
-      accent-color: #00d2ff;
-    }
   `]
 })
 export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
